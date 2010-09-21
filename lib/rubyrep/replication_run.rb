@@ -63,6 +63,7 @@ module RR
       $stdout.write "-" if session.configuration.options[:replication_trace]
 
       return unless [:left, :right].any? do |database|
+        next false if session.configuration.send(database)[:mode] == :slave
         changes_pending = false
         t = Thread.new do
           changes_pending = session.send(database).select_one(
