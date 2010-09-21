@@ -358,6 +358,7 @@ module RR
 
         unsynced = false
         [:left, :right].each do |database|
+          next if session.configuration.send(database)[:mode] == :slave
           if !trigger_exists? database, table_pair[database]
             create_trigger database, table_pair[database]
             unsynced = true
