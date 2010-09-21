@@ -40,6 +40,9 @@ module RR
     # Current database (either :+left+ or :+right+)
     attr_accessor :database
 
+    # Current mode of database (either :+master+ or :+slave+)
+    attr_accessor :mode
+    
     # The current +ProxyConnection+.
     attr_accessor :connection
 
@@ -84,6 +87,7 @@ module RR
       self.session = session
       self.database = database
       self.connection = session.send(database)
+      self.mode = session.configuration.send(database)[:mode]
 
       init_cache
       self.current_id = -1
@@ -95,6 +99,7 @@ module RR
     # * :+expire_time+: cache is older than the given number of seconds
     # * :+forced+: if +true+ update the cache even if not yet expired
     def update(options = {:forced => false, :expire_time => 1})
+      return if self.mode == :slave
       return unless options[:forced] or Time.now - self.last_updated >= options[:expire_time]
       
       self.last_updated = Time.now
