@@ -46,18 +46,18 @@ module RR
           print "\e[1D" * (@current_markers + 5) if @current_percentage != 0 # go left
           print "#{new_percentage}%".rjust(4) << " "
           print "\e[1C" * @current_markers if @current_markers != 0 # go back right
-          $stdout.flush
+          $stdout.flush rescue nil
           @current_percentage = new_percentage
         end
 
         if new_markers > @current_markers
           print '.'  * (new_markers - @current_markers)
           @current_markers = new_markers
-          $stdout.flush
+          $stdout.flush rescue nil
         end
         if @current_steps == @max_steps
           print '.' * (max_markers - @current_markers) + ' '
-          $stdout.flush
+          $stdout.flush rescue nil
         end
       end
     end
