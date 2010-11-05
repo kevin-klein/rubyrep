@@ -36,19 +36,19 @@ module RR
         :table => left_table,
         :row_buffer_size => scan_options[:row_buffer_size],
         :type_cast => true
-      )
+      ) unless session.configuration.left[:mode] == :slave
       right_cursor = session.right.select_cursor(
         :table => right_table,
         :row_buffer_size => scan_options[:row_buffer_size],
         :type_cast => true
-      )
+      ) unless session.configuration.right[:mode] == :slave
       left_row = right_row = nil
       update_progress 0 # ensures progress bar is printed even if there are no records
-      while left_row or right_row or left_cursor.next? or right_cursor.next?
+      while left_row or right_row or (left_cursor && left_cursor.next?) or (right_cursor && right_cursor.next?)
         # if there is no current left row, _try_ to load the next one
-        left_row ||= left_cursor.next_row if left_cursor.next?
+        left_row ||= left_cursor.next_row if left_cursor && left_cursor.next?
         # if there is no current right row, _try_ to load the next one
-        right_row ||= right_cursor.next_row if right_cursor.next?
+        right_row ||= right_cursor.next_row if right_cursor && right_cursor.next?
         rank = rank_rows left_row, right_row
         case rank
         when -1
