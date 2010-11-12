@@ -312,7 +312,7 @@ module RR
         "#{table_pair[:left]}, #{table_pair[:right]}"
       end
 
-      unless unsynced_table_specs.empty?
+      unless session.configuration.options[:no_sync] || unsynced_table_specs.empty?
         puts "Executing initial table syncs"
         runner = SyncRunner.new
         runner.session = session
