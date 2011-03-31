@@ -223,6 +223,8 @@ module RR
     # Checks in both databases, if the activity marker tables exist and if not,
     # creates them.
     def ensure_activity_markers
+      return if [:left, :right].any? { |db| session.configuration.send(db)[:mode] == :slave }
+
       table_name = "#{options[:rep_prefix]}_running_flags"
       [:left, :right].each do |database|
         connection = session.send(database)

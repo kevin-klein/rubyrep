@@ -19,6 +19,8 @@ module RR
       # * +database+: identifying the database (either :+left+ or :+right+)
       # * +table+: name of the table
       def exclude_rr_activity(database, table)
+        return if [:left, :right].any? { |db| session.configuration.send(db)[:mode] == :slave }
+
         trigger_mode_switcher.exclude_rr_activity database, table
       end
 
