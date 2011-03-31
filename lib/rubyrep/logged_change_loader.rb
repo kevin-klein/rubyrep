@@ -124,6 +124,8 @@ module RR
         :type_cast => true,
         :row_buffer_size => session.configuration.options[:row_buffer_size]
       )
+
+      start_count = self.change_array.length
       while cursor.next?
         change = cursor.next_row
         self.current_id = change['id']
@@ -135,6 +137,7 @@ module RR
         key_changes << change
 
         break if $rubyrep_shutdown
+        break if (self.change_array.length - start_count) >= session.configuration.options[:mem_buffer_size]
       end
       cursor.clear
 

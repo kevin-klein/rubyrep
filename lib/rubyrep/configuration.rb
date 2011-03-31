@@ -33,6 +33,7 @@ module RR
     DEFAULT_OPTIONS = {
       :proxy_block_size => 1000,
       :row_buffer_size => 1000,
+      :mem_buffer_size => 4294967295, # Max value for 32bit
       :replicator => :two_way,
       :committer => :buffered_commit,
       :commit_frequency => 1000,
@@ -57,8 +58,10 @@ module RR
     # Possible settings:
     # * :+proxy_block_size+: The proxy cursor will calculate the checksum for block_size number of records each.
     # * :+row_buffer_size+:
-    #   The number of rows that is read into memory at once.
+    #   The number of rows that are read from the database tables at a time.
     #   Only needed for database drivers that don't stream results one-by-one to the client.
+    # * :+mem_buffer_size+:
+    #   The number of rows that are read into memory at once.
     # * :+committer+:
     #   A committer key as registered by Committers#register.
     #   Determines the transaction management to be used during the sync.
