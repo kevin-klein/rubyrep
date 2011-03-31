@@ -215,10 +215,7 @@ module RR
         target_table = rep_helper.corresponding_table(source_db, source_table)
 
         values = rep_helper.load_record source_db, source_table, source_key
-        if values == nil
-          diff.amend
-          replicate_difference diff, remaining_attempts - 1, "source record for insert vanished"
-        else
+        unless values == nil
           attempt_change('insert', source_db, target_db, diff, remaining_attempts) do
             rep_helper.insert_record target_db, target_table, values
             log_replication_outcome source_db, diff
@@ -241,16 +238,10 @@ module RR
         target_table = rep_helper.corresponding_table(source_db, source_table)
 
         values = rep_helper.load_record source_db, source_table, source_key
-        if values == nil
-          diff.amend
-          replicate_difference diff, remaining_attempts - 1, "source record for update vanished"
-        else
+        unless values == nil
           attempt_change('update', source_db, target_db, diff, remaining_attempts) do
             number_updated = rep_helper.update_record target_db, target_table, values, target_key
-            if number_updated == 0
-              diff.amend
-              replicate_difference diff, remaining_attempts - 1, "target record for update vanished"
-            else
+            unless number_updated == 0
               log_replication_outcome source_db, diff
             end
           end
@@ -278,9 +269,7 @@ module RR
           end
         rescue Exception => e
           rep_helper.session.send(target_db).execute "rollback to savepoint rr_#{action}_#{remaining_attempts}"
-          diff.amend
-          replicate_difference diff, remaining_attempts - 1,
-            "#{action} failed with #{e.message}"
+          raise
         end
       end
 
@@ -298,10 +287,7 @@ module RR
 
         attempt_change('delete', source_db, target_db, diff, remaining_attempts) do
           number_updated = rep_helper.delete_record target_db, target_table, target_key
-          if number_updated == 0
-            diff.amend
-            replicate_difference diff, remaining_attempts - 1, "target record for delete vanished"
-          else
+          unless number_updated == 0
             log_replication_outcome source_db, diff
           end
         end
