@@ -15,6 +15,32 @@ module RR
       end
       private :key_clause
 
+      # Returns the filter clause that is used to filter rows from the trigger.
+      # * +conditions+: ActiveRecord style conditions, optionally preceded by the keys
+      #   :new or :old, to describe on which side to apply the conditions.
+      def filter_clause(conditions)
+        return "" if conditions.nil?
+        if conditions.kind_of?(Hash) && (conditions.has_key?(:new) || conditions.has_key?(:old))
+          clause = conditions.map do |trigger_var, c|
+            ActiveRecord::Base.send(:sanitize_sql_for_conditions, c, trigger_var.to_s.upcase)
+          end.join(" AND ")
+        else
+          clause = ActiveRecord::Base.send(:sanitize_sql_for_conditions, conditions, nil)
+        end
+        clause.empty? ? "" : "IF (#{clause}) THEN RETURN NULL; END IF;"
+      end
+      private :filter_clause
+
+      # Returns the filter clauses for insert, update, and delete that are used
+      # to filter rows from the trigger.
+      # * +conditions+: conditions hash as described in #filter_clause preceded by
+      #   the keys :insert, :update, and/or :delete, to describe on which operation
+      #   to apply the conditions.
+      def filter_clauses_for_conditions(conditions)
+        [:insert, :update, :delete].map { |tg_op| filter_clause(conditions[tg_op]) }
+      end
+      private :filter_clauses_for_conditions
+
       # Returns the schema prefix (including dot) that will be used by the
       # triggers to write into the rubyrep infrastructure tables.
       # To avoid setting the wrong prefix, it will only return a schema prefix
@@ -64,19 +90,25 @@ module RR
           modification_check = ""
         end
 
+        filter_conditions = params[:filter_conditions] || {}
+        filter_insert, filter_update, filter_delete = filter_clauses_for_conditions(filter_conditions[:replicate] || {})
+
         # now create the trigger
         execute(<<-end_sql)
           CREATE OR REPLACE FUNCTION "#{params[:trigger_name]}"() RETURNS TRIGGER AS $change_trigger$
             BEGIN
               #{activity_check}
               IF (TG_OP = 'DELETE') THEN
+                #{filter_delete}
                 INSERT INTO #{schema_prefix}#{params[:log_table]}(change_table, change_key, change_type, change_time)
                   SELECT '#{params[:table]}', #{key_clause('OLD', params)}, 'D', now();
               ELSIF (TG_OP = 'UPDATE') THEN
                 #{modification_check}
+                #{filter_update}
                 INSERT INTO  #{schema_prefix}#{params[:log_table]}(change_table, change_key, change_new_key, change_type, change_time)
                   SELECT '#{params[:table]}', #{key_clause('OLD', params)}, #{key_clause('NEW', params)}, 'U', now();
               ELSIF (TG_OP = 'INSERT') THEN
+                #{filter_insert}
                 INSERT INTO  #{schema_prefix}#{params[:log_table]}(change_table, change_key, change_type, change_time)
                   SELECT '#{params[:table]}', #{key_clause('NEW', params)}, 'I', now();
               END IF;

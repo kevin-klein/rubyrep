@@ -41,6 +41,9 @@ module RR
         :exclude_rr_activity => false,
       }
 
+      event_filter = options[:event_filter]
+      params[:filter_conditions] = event_filter.filter_conditions if event_filter.respond_to?(:filter_conditions)
+
       session.send(database).create_replication_trigger params
     end
 

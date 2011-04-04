@@ -324,6 +324,7 @@ module RR
     #   * :+exclude_starting_row+: if true, do not include the row specified by :+from+
     #   * :+to+: nil OR the hash of primary key => value pairs designating the end of the selection
     #   * :+row_keys+: an array of primary key => value hashes specify the target rows.
+    #   * :+conditions+: additional conditions for the select query.
     def table_select_query(table, options = {})
       query = "select #{quote_column_list(table)}"
       query << " from #{quote_table_name(table)}"
@@ -355,6 +356,9 @@ module RR
           end
           query << ')'
         end
+      end
+      if options[:conditions]
+        query << ' and (not (' << ActiveRecord::Base.send(:sanitize_sql_for_conditions, options[:conditions], quote_table_name(table)) << '))'
       end
       query << " order by #{quote_key_list(table)}"
 
