@@ -250,25 +250,29 @@ module RR
       # * work with tables containing a dot (".") and
       # * only look for tables in the current schema search path.
       def column_definitions(table_name) #:nodoc:
-        rows = self.select_all <<-end_sql
-          SELECT
-            a.attname as name,
-            format_type(a.atttypid, a.atttypmod) as type,
-            d.adsrc as source,
-            a.attnotnull as notnull
-          FROM pg_attribute a LEFT JOIN pg_attrdef d
-            ON a.attrelid = d.adrelid AND a.attnum = d.adnum
-          WHERE a.attrelid = (
-            SELECT oid FROM pg_class
-            WHERE relname = '#{table_name}' AND relnamespace IN
-              (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
-            LIMIT 1
-            )
-            AND a.attnum > 0 AND NOT a.attisdropped
-          ORDER BY a.attnum
-        end_sql
+        @column_defs ||= {}
+        unless @column_defs[table_name]
+          rows = self.select_all <<-end_sql
+            SELECT
+              a.attname as name,
+              format_type(a.atttypid, a.atttypmod) as type,
+              d.adsrc as source,
+              a.attnotnull as notnull
+            FROM pg_attribute a LEFT JOIN pg_attrdef d
+              ON a.attrelid = d.adrelid AND a.attnum = d.adnum
+            WHERE a.attrelid = (
+              SELECT oid FROM pg_class
+              WHERE relname = '#{table_name}' AND relnamespace IN
+                (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
+              LIMIT 1
+              )
+              AND a.attnum > 0 AND NOT a.attisdropped
+            ORDER BY a.attnum
+          end_sql
     
-        rows.map {|row| [row['name'], row['type'], row['source'], row['notnull']]}
+          @column_defs[table_name] = rows.map {|row| [row['name'], row['type'], row['source'], row['notnull']]}
+        end
+        @column_defs[table_name]
       end
 
     end
