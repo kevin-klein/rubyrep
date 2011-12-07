@@ -52,6 +52,7 @@ require 'rubyrep/replication_run'
 require 'rubyrep/replication_runner'
 require 'rubyrep/prepare_replication_runner'
 require 'rubyrep/uninstall_runner'
+require 'rubyrep/uninstall_tables_runner'
 require 'rubyrep/generate_runner'
 require 'rubyrep/noisy_connection'
 

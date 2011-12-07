@@ -296,20 +296,34 @@ module RR
       [:left, :right].each do |database|
         configured_tables = configured_table_pairs.map {|table_pair| table_pair[database]}
         unconfigured_tables = session.send(database).tables - configured_tables
-        unconfigured_tables.each do |table|
-          if trigger_exists?(database, table)
-            drop_trigger(database, table)
-            session.send(database).execute(
-              "delete from #{options[:rep_prefix]}_pending_changes where change_table = '#{table}'")
-          end
+        restore_specified_tables(database, unconfigured_tables)
+      end
+    end
 
-          if database == :left && sync_state_exists?
-            session.left.execute(
-              "delete from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'")
-          end
+    # Removes triggers and restores sequences of the specified table pairs.
+    # * +configured_table_pairs+:
+    #   An array of table pairs (e. g. [{:left => 'xy', :right => 'xy2'}]).
+    def restore_configured_tables(configured_table_pairs = session.configured_table_pairs)
+      [:left, :right].each do |database|
+        configured_tables = configured_table_pairs.map {|table_pair| table_pair[database]}
+        restore_specified_tables(database, configured_tables)
+      end
+    end
 
-          clear_sequence_setup(database, table)
+    def restore_specified_tables(database, table_names)
+      table_names.each do |table|
+        if trigger_exists?(database, table)
+          drop_trigger(database, table)
+          session.send(database).execute(
+            "delete from #{options[:rep_prefix]}_pending_changes where change_table = '#{table}'")
         end
+
+        if database == :left && sync_state_exists?
+          session.left.execute(
+            "delete from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'")
+        end
+
+        clear_sequence_setup(database, table)
       end
     end
 
