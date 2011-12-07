@@ -88,7 +88,7 @@ module RR
           begin
             diff = load_difference
             break unless diff.loaded?
-            break if sweeper.terminated?
+            break if sweeper.terminated? || $rubyrep_shutdown
             if diff.type != :no_diff and not event_filtered?(diff)
               replicator.replicate_difference diff
             end

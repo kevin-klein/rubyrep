@@ -104,7 +104,7 @@ EOS
       @termination_mutex.lock
       @waiter_thread ||= Thread.new {@termination_mutex.lock; self.termination_requested = true}
       %w(TERM INT).each do |signal|
-        Signal.trap(signal) {puts "\nCaught '#{signal}': Initiating graceful shutdown"; @termination_mutex.unlock}
+        Signal.trap(signal) {puts "\nCaught '#{signal}': Initiating graceful shutdown"; $rubyrep_shutdown = true; @termination_mutex.unlock}
       end
     end
 
@@ -145,6 +145,7 @@ EOS
             $stderr.puts e.backtrace.map {|line| line.gsub(/^/, "#{' ' * now.length} ")}
           end
         end
+        @termination_mutex.unlock if $rubyrep_shutdown
         pause_replication
       end
     end

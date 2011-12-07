@@ -128,6 +128,8 @@ module RR
         table_change_tree = change_tree[change['change_table']] ||= {}
         key_changes = table_change_tree[change['change_key']] ||= []
         key_changes << change
+
+        break if $rubyrep_shutdown
       end
       cursor.clear
     end
