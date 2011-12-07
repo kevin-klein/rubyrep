@@ -27,6 +27,11 @@ module RR
         Replicators.replicators[session.configuration.options[:replicator]].new(helper)
     end
 
+    # Returns the current LoggedChangeLoaders; creates it if necessary
+    def loaders
+      @loaders ||= LoggedChangeLoaders.new(session)
+    end
+
     # Calls the event filter for the give  difference.
     # * +diff+: instance of ReplicationDifference
     # Returns +true+ if replication of the difference should *not* proceed.
@@ -48,9 +53,7 @@ module RR
     # (Either new unprocessed differences or if not available, the first available 'second chancer'.)
     #
     def load_difference
-      @loaders ||= LoggedChangeLoaders.new(session)
-      @loaders.update # ensure the cache of change log records is up-to-date
-      diff = ReplicationDifference.new @loaders
+      diff = ReplicationDifference.new loaders
       diff.load
       unless diff.loaded? or second_chancers.empty?
         diff = second_chancers.shift
@@ -82,36 +85,43 @@ module RR
       success = false
       begin
         replicator # ensure that replicator is created and has chance to validate settings
+        break_on_terminate = false
 
         loop do
           $stdout.write "." if session.configuration.options[:replication_trace]
+          break unless loaders.update # ensure the cache of change log records is up-to-date
 
-          begin
-            diff = load_difference
-            break unless diff.loaded?
-            break if sweeper.terminated? || $rubyrep_shutdown
-            if diff.type != :no_diff and not event_filtered?(diff)
-              replicator.replicate_difference diff
-            end
-          rescue Exception => e
-            if e.message =~ /violates foreign key constraint|foreign key constraint fails/i and !diff.second_chance?
-              # Note:
-              # Identifying the foreign key constraint violation via regular expression is
-              # database dependent and *dirty*.
-              # It would be better to use the ActiveRecord #translate_exception mechanism.
-              # However as per version 3.0.5 this doesn't work yet properly.
+          loop do
+            begin
+              diff = load_difference
+              break unless diff.loaded?
+              break_on_terminate = sweeper.terminated? || $rubyrep_shutdown
+              break if break_on_terminate
+              if diff.type != :no_diff and not event_filtered?(diff)
+                replicator.replicate_difference diff
+              end
+            rescue Exception => e
+              if e.message =~ /violates foreign key constraint|foreign key constraint fails/i and !diff.second_chance?
+                # Note:
+                # Identifying the foreign key constraint violation via regular expression is
+                # database dependent and *dirty*.
+                # It would be better to use the ActiveRecord #translate_exception mechanism.
+                # However as per version 3.0.5 this doesn't work yet properly.
 
-              diff.second_chance = true
-              second_chancers << diff
-            else
-              begin
-                helper.log_replication_outcome diff, e.message,
-                  e.class.to_s + "\n" + e.backtrace.join("\n")
-              rescue Exception => _
-                # if logging to database itself fails, re-raise the original exception
-                raise e
+                diff.second_chance = true
+                second_chancers << diff
+              else
+                begin
+                  helper.log_replication_outcome diff, e.message,
+                    e.class.to_s + "\n" + e.backtrace.join("\n")
+                rescue Exception => _
+                  # if logging to database itself fails, re-raise the original exception
+                  raise e
+                end
               end
             end
+
+            break if break_on_terminate
           end
         end
         success = true

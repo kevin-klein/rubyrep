@@ -27,7 +27,7 @@ module RR
 
     # Forces an update of the change log cache
     def update
-      [:left, :right].each {|database| self[database].update :forced => true}
+      [:left, :right].any? {|database| self[database].update :forced => true}
     end
   end
 
@@ -99,8 +99,8 @@ module RR
     # * :+expire_time+: cache is older than the given number of seconds
     # * :+forced+: if +true+ update the cache even if not yet expired
     def update(options = {:forced => false, :expire_time => 1})
-      return if self.mode == :slave
-      return unless options[:forced] or Time.now - self.last_updated >= options[:expire_time]
+      return false if self.mode == :slave
+      return false unless options[:forced] or Time.now - self.last_updated >= options[:expire_time]
       
       self.last_updated = Time.now
 
@@ -114,7 +114,7 @@ module RR
         :exclude_starting_row => true,
         :row_buffer_size => 1
       )
-      return unless cursor.next?
+      return false unless cursor.next?
 
       # Something is here. Let's actually load it.
       cursor = connection.select_cursor(
@@ -137,6 +137,8 @@ module RR
         break if $rubyrep_shutdown
       end
       cursor.clear
+
+      return true
     end
 
     # Returns the creation time of the oldest unprocessed change log record.
@@ -147,7 +149,6 @@ module RR
 
     # Returns the oldest unprocessed change log record (column_name => value hash).
     def oldest_change
-      update
       oldest_change = nil
       unless change_array.empty?
         while (oldest_change = change_array[self.current_index]) == nil
@@ -161,7 +162,6 @@ module RR
     # * +change_table+: the name of the table that was changed
     # * +change_key+: the change key of the modified record
     def load(change_table, change_key)
-      update
       change = nil
       table_change_tree = change_tree[change_table]
       if table_change_tree
