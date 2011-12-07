@@ -130,6 +130,7 @@ EOS
 
     # Executes an endless loop of replication runs
     def execute
+      $stdout.sync = true
       init_waiter
       prepare_replication
 

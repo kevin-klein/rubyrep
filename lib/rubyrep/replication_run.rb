@@ -60,6 +60,8 @@ module RR
 
     # Executes the replication run.
     def run
+      $stdout.write "-" if session.configuration.options[:replication_trace]
+
       return unless [:left, :right].any? do |database|
         changes_pending = false
         t = Thread.new do
@@ -81,6 +83,8 @@ module RR
         replicator # ensure that replicator is created and has chance to validate settings
 
         loop do
+          $stdout.write "." if session.configuration.options[:replication_trace]
+
           begin
             diff = load_difference
             break unless diff.loaded?
