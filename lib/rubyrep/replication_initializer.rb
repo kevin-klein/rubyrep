@@ -99,6 +99,16 @@ module RR
       end
     end
 
+    # Checks the state of the sync for a particular table to determine if a
+    # failure occurred during sync.
+    # * database: either :+left+ or :+right+
+    # * +table_name+: name of the table
+    def sync_complete?(database, table)
+      row = session.send(database).select_one(
+        "select state from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'")
+      row && row['state'] == 'complete'
+    end
+
     # Returns +true+ if the change log exists in the specified database.
     # * database: either :+left+ or :+right+
     def change_log_exists?(database)
@@ -110,6 +120,11 @@ module RR
       session.left.tables.include? "#{options[:rep_prefix]}_logged_events"
     end
 
+    # Returns +true+ if the replication sync state exists.
+    def sync_state_exists?
+      session.left.tables.include? "#{options[:rep_prefix]}_sync_state"
+    end
+
     # Drops the change log table in the specified database
     # * database: either :+left+ or :+right+
     def drop_change_log(database)
@@ -119,6 +134,11 @@ module RR
     # Drops the replication log table.
     def drop_event_log
       session.left.drop_table "#{options[:rep_prefix]}_logged_events"
+    end
+
+    # Drops the sync state table.
+    def drop_sync_state
+      session.left.drop_table "#{options[:rep_prefix]}_sync_state"
     end
 
     # Size of the replication log column diff_dump
@@ -161,6 +181,18 @@ module RR
         session.left.add_column table_name, :long_description, :string, :limit => LONG_DESCRIPTION_SIZE
         session.left.add_column table_name, :event_time, :timestamp
         session.left.add_column table_name, :diff_dump, :string, :limit => DIFF_DUMP_SIZE
+        session.left.remove_column table_name, 'id'
+        session.left.add_big_primary_key table_name, 'id'
+      end
+    end
+
+    # Creates the sync state table.
+    def create_sync_state
+      silence_ddl_notices(:left) do
+        table_name = "#{options[:rep_prefix]}_sync_state"
+        session.left.create_table "#{options[:rep_prefix]}_sync_state"
+        session.left.add_column table_name, :table_name, :string
+        session.left.add_column table_name, :state, :string
         session.left.remove_column table_name, 'id'
         session.left.add_big_primary_key table_name, 'id'
       end
@@ -209,6 +241,11 @@ module RR
       create_event_log unless event_log_exists?
     end
 
+    # Checks if the sync state table already exists and creates it if necessary
+    def ensure_sync_state
+      create_sync_state unless sync_state_exists?
+    end
+
     # Checks in both databases, if the change log tables exists and creates them
     # if necessary
     def ensure_change_logs
@@ -223,6 +260,7 @@ module RR
       ensure_activity_markers
       ensure_change_logs
       ensure_event_log
+      ensure_sync_state
     end
 
     # Checks in both databases, if the change_log tables exist. If yes, drops them.
@@ -245,6 +283,7 @@ module RR
     # Removes all rubyrep infrastructure tables from both databases.
     def drop_infrastructure
       drop_event_log if event_log_exists?
+      drop_sync_state if sync_state_exists?
       drop_change_logs
       drop_activity_markers
     end
@@ -263,6 +302,12 @@ module RR
             session.send(database).execute(
               "delete from #{options[:rep_prefix]}_pending_changes where change_table = '#{table}'")
           end
+
+          if database == :left && sync_state_exists?
+            session.left.execute(
+              "delete from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'")
+          end
+
           clear_sequence_setup(database, table)
         end
       end
@@ -299,8 +344,10 @@ module RR
 
         unsynced = false
         [:left, :right].each do |database|
-          unless trigger_exists? database, table_pair[database]
+          if !trigger_exists? database, table_pair[database]
             create_trigger database, table_pair[database]
+            unsynced = true
+          elsif !sync_complete? database, table_pair[database]
             unsynced = true
           end
         end

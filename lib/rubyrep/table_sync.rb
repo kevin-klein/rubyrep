@@ -71,6 +71,7 @@ module RR
       syncer = Syncers.configured_syncer(sync_options).new(helper)
     
       execute_sync_hook :before_table_sync
+      self.helper.log_table_sync_started(left_table)
 
       scan.run do |type, row|
         yield type, row if block_given? # To enable progress reporting
@@ -78,7 +79,8 @@ module RR
           syncer.sync_difference type, row
         end
       end
-      
+
+      self.helper.log_table_sync_complete(left_table)
       execute_sync_hook :after_table_sync
 
       success = true # considered to be successful if we get till here

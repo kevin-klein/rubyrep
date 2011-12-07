@@ -70,6 +70,14 @@ module RR
       end
     end
 
+    # Checks if the sync state table already exists and creates it if necessary
+    def ensure_sync_state
+      unless @ensured_sync_state
+        ReplicationInitializer.new(session).ensure_sync_state
+        @ensured_sync_state = true
+      end
+    end
+
     # Returns an array of primary key names for the synced table
     def primary_key_names
       @primary_key_names ||= session.left.primary_key_names(left_table)
@@ -105,6 +113,30 @@ module RR
         :event_time => Time.now,
         :diff_dump => nil
       }
+    end
+
+    # Logs the sync state into the sync state table.
+    # * +table+: string describing the name of the table
+    # * +state+: string describing the state to set
+    def log_table_sync_state(table, state)
+      ensure_sync_state
+      row = session.left.select_one(
+        "select id from #{sync_options[:rep_prefix]}_sync_state where table_name = '#{table}'")
+      values = { 'table_name' => table, 'state' => state }
+      values['id'] = row['id'].to_i if row
+      session.left.send(row ? :update_record : :insert_record, "#{sync_options[:rep_prefix]}_sync_state", values)
+    end
+
+    # Logs a started state into the sync state table.
+    # * +table+: string describing the name of the table
+    def log_table_sync_started(table)
+      log_table_sync_state(table, 'started')
+    end
+
+    # Logs a completed state into the sync state table.
+    # * +table+: string describing the name of the table
+    def log_table_sync_complete(table)
+      log_table_sync_state(table, 'complete')
     end
 
     # Asks the committer (if it exists) to finalize any open transactions
