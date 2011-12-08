@@ -1,6 +1,6 @@
 module RR
   module Syncers
-    # This syncer implements a two way sync.
+    # This syncer implements a one way sync.
     # Syncer options relevant for this syncer:
     # * :+left_record_handling+, :+right_record_handling+:
     #   Handling of records only existing only in the named database.
@@ -41,10 +41,10 @@ module RR
     #     # delete records existing only in the left database.
     #     sync_helper.delete(type, row) if type == :left
     #   end
-    class TwoWaySyncer
-      
+    class OneWaySyncer
+
       # Register the syncer
-      Syncers.register :two_way => self
+      Syncers.register :one_way => self
 
       # The current SyncHelper object
       attr_accessor :sync_helper
@@ -102,7 +102,7 @@ module RR
         validate_left_right_record_handling_option sync_helper.sync_options[:right_record_handling]
         validate_conflict_handling_option sync_helper.sync_options[:sync_conflict_handling]
         validate_logging_options sync_helper.sync_options[:logged_sync_events]
-        
+
         self.sync_helper = sync_helper
       end
 

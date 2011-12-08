@@ -1,6 +1,6 @@
 module RR
   module Replicators
-    # This replicator implements a two way replication.
+    # This replicator implements a one way replication.
     # Options:
     # * :+left_change_handling+, :+right_change_handling+:
     #   Handling of records that were changed only in the named database.
@@ -52,10 +52,10 @@ module RR
     #       end_str
     #     end
     #   end
-    class TwoWayReplicator
-      
+    class OneWayReplicator
+
       # Register the syncer
-      Replicators.register :two_way => self
+      Replicators.register :one_way => self
 
       # The current ReplicationHelper object
       attr_accessor :rep_helper
@@ -123,7 +123,7 @@ module RR
         end
       end
 
-      # Initializes the TwoWayReplicator
+      # Initializes the OneWayReplicator
       # Raises an ArgumentError if any of the replication options is invalid.
       #
       # Parameters:
@@ -355,7 +355,7 @@ module RR
           end
         end
       end
-      
+
     end
   end
 end
