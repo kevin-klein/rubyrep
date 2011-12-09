@@ -41,8 +41,10 @@ module RR
         :table => left_table,
         :row_buffer_size => scan_options[:row_buffer_size],
         :type_cast => true,
-        :conditions => filter_conditions
-      ) unless session.configuration.left[:mode] == :slave
+        :conditions => filter_conditions,
+        :from => session.left.primary_key_names(left_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_start; h },
+        :to => session.left.primary_key_names(left_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_end; h }
+      )
 
       event_filter = session.configuration.options_for_table(right_table)[:event_filter]
       filter_conditions = event_filter.respond_to?(:filter_conditions) ? event_filter.filter_conditions : nil
@@ -52,16 +54,18 @@ module RR
         :table => right_table,
         :row_buffer_size => scan_options[:row_buffer_size],
         :type_cast => true,
-        :conditions => filter_conditions
-      ) unless session.configuration.right[:mode] == :slave
+        :conditions => filter_conditions,
+        :from => session.left.primary_key_names(right_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_start; h },
+        :to => session.left.primary_key_names(right_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_end; h }
+      )
 
       left_row = right_row = nil
       update_progress 0 # ensures progress bar is printed even if there are no records
-      while left_row or right_row or (left_cursor && left_cursor.next?) or (right_cursor && right_cursor.next?)
+      while left_row or right_row or left_cursor.next? or right_cursor.next?
         # if there is no current left row, _try_ to load the next one
-        left_row ||= left_cursor.next_row if left_cursor && left_cursor.next?
+        left_row ||= left_cursor.next_row if left_cursor.next?
         # if there is no current right row, _try_ to load the next one
-        right_row ||= right_cursor.next_row if right_cursor && right_cursor.next?
+        right_row ||= right_cursor.next_row if right_cursor.next?
         rank = rank_rows left_row, right_row
         case rank
         when -1
