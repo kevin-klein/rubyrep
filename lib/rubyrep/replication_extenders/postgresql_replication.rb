@@ -22,11 +22,13 @@ module RR
         return "" if conditions.nil?
         if conditions.kind_of?(Hash) && (conditions.has_key?(:new) || conditions.has_key?(:old))
           clause = conditions.map do |trigger_var, c|
-            Class.new(ActiveRecord::Base).send(:sanitize_sql_for_conditions, c, trigger_var.to_s.upcase)
+            t = trigger_var.to_s.upcase
+            Class.new(ActiveRecord::Base).send(:sanitize_sql_for_conditions, c, t).gsub(/^"#{t}"/, t)
           end.join(" AND ")
         else
-          clause = Class.new(ActiveRecord::Base).send(:sanitize_sql_for_conditions, conditions, nil)
+          clause = conditions
         end
+
         clause.empty? ? "" : "IF (#{clause}) THEN RETURN NULL; END IF;"
       end
       private :filter_clause
