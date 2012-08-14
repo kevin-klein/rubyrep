@@ -82,6 +82,10 @@ EOS
 
     # Removes current +Session+.
     def clear_session
+      if @session
+        @session.left.rollback_db_transaction  if @session.left  rescue nil
+        @session.right.rollback_db_transaction if @session.right rescue nil
+      end
       @session = nil
     end
 
@@ -144,6 +148,7 @@ EOS
             @last_exception_message = e.to_s
             $stderr.puts e.backtrace.map {|line| line.gsub(/^/, "#{' ' * now.length} ")}
           end
+          self.termination_requested = true
         end
         @termination_mutex.unlock if $rubyrep_shutdown
         pause_replication
