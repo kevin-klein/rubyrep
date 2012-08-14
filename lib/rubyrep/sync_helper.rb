@@ -90,6 +90,8 @@ module RR
     # * +outcome+: string describing what's done about the sync
     # * +details+: string with further details regarding the sync
     def log_sync_outcome(row, type, outcome, details = nil)
+      return # ManageIQ does not want to use this table
+
       ensure_event_log
       if primary_key_names.size == 1
         key = row[primary_key_names[0]]

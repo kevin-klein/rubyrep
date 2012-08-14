@@ -102,6 +102,8 @@ module RR
     # * +outcome+: string summarizing the outcome of the replication
     # * +details+: string with further details regarding the replication
     def log_replication_outcome(diff, outcome, details = nil)
+      return # ManageIQ does not want to use this table
+
       table = diff.changes[:left].table
       key = diff.changes[:left].key
       if key.size == 1
