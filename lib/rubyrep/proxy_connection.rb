@@ -358,7 +358,7 @@ module RR
         end
       end
       if options[:conditions]
-        query << ' and (not (' << ActiveRecord::Base.send(:sanitize_sql_for_conditions, options[:conditions], quote_table_name(table)) << '))'
+        query << ' and (not (' << Class.new(ActiveRecord::Base).send(:sanitize_sql_for_conditions, options[:conditions], quote_table_name(table)) << '))'
       end
       query << " order by #{quote_key_list(table)}"
 
