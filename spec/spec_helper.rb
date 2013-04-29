@@ -1,5 +1,7 @@
+# encoding: utf-8
+
 begin
-  require 'spec'
+  require 'rspec'
 rescue LoadError
   require 'rubygems'
   gem 'rspec'

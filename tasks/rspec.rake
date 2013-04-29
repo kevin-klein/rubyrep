@@ -1,11 +1,12 @@
 begin
-  require 'spec'
+  require 'rspec'
 rescue LoadError
   require 'rubygems'
-  require 'spec'
+  require 'rspec'
 end
+
 begin
-  require 'spec/rake/spectask'
+  require 'rspec/core/rake_task'
 rescue LoadError
   puts <<-EOS
 To use rspec for testing you must install rspec gem:
@@ -15,21 +16,21 @@ To use rspec for testing you must install rspec gem:
 end
 
 desc "Run the specs under spec/models"
-Spec::Rake::SpecTask.new do |t|
-  t.spec_opts = ['--options', "spec/spec.opts"]
+RSpec::Core::RakeTask.new do |t|
+  t.rspec_opts = ['--options', "spec/spec.opts"]
   t.spec_files = FileList['spec/*_spec.rb']
 end
 
 namespace :spec do
   desc "Generate specdocs for examples for inclusion in RDoc"
-  Spec::Rake::SpecTask.new('docs') do |t|
+  RSpec::Core::RakeTask.new('docs') do |t|
     t.spec_files = FileList['spec/*_spec.rb']
-    t.spec_opts = ["--format", "specdoc"]
+    t.rspec_opts = ["--format", "specdoc"]
   end
 
   desc "Run the specs with RCov"
-  Spec::Rake::SpecTask.new('rcov') do |t|
-    t.spec_opts = ['--options', "spec/spec.opts"]
+  RSpec::Core::RakeTask.new('rcov') do |t|
+    t.rspec_opts = ['--options', "spec/spec.opts"]
     t.spec_files = FileList['spec/*_spec.rb']
     t.rcov = true
     t.rcov_opts = [

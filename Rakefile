@@ -1,3 +1,5 @@
+$LOAD_PATH << '.'
+
 require 'config/requirements'
 require 'config/hoe' if Object.const_defined? 'Hoe' # setup Hoe + all gem configuration
 
