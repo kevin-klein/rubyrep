@@ -60,6 +60,7 @@ module RR
           if maintain_activity_status?
             session.send(database).execute("delete from #{activity_marker_table}")
           end
+          session.send(database).decrement_open_transactions
           session.send(database).commit_db_transaction
         end
       end
@@ -69,6 +70,7 @@ module RR
       def begin_db_transactions
         [:left, :right].each do |database|
           session.send(database).begin_db_transaction
+          session.send(database).increment_open_transactions
           if maintain_activity_status?
             session.send(database).execute("insert into #{activity_marker_table} values(1)")
           end
@@ -77,7 +79,9 @@ module RR
 
       # Rolls back the open transactions in both databases.
       def rollback_db_transactions
+        session.left.decrement_open_transactions
         session.left.rollback_db_transaction
+        session.right.decrement_open_transactions
         session.right.rollback_db_transaction
       end
 
@@ -113,7 +117,6 @@ module RR
       def insert_record(database, table, values)
         exclude_rr_activity database, table
         super
-        commit
       end
 
       # Updates the specified record in the specified database.
@@ -126,7 +129,6 @@ module RR
       def update_record(database, table, values, old_key = nil)
         exclude_rr_activity database, table
         super
-        commit
       end
 
       # Deletes the specified record in the specified database.
@@ -136,7 +138,6 @@ module RR
       def delete_record(database, table, values)
         exclude_rr_activity database, table
         super
-        commit
       end
 
       # Is called after the last insert / update / delete query.
