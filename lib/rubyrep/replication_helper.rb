@@ -50,6 +50,11 @@ module RR
       committer.delete_record(database, table, values)
     end
 
+    # Delegates to Committers::BufferedCommitter#commit
+    def commit
+      committer.commit if committer.respond_to?(:commit)
+    end
+
     # Loads the specified record. Returns an according column_name => value hash.
     # Parameters:
     # * +database+: either :+left+ or :+right+

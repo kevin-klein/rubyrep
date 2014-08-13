@@ -111,6 +111,7 @@ module RR
       :quote_table_name, :execute,
       :select_one, :select_all, :tables, :update, :delete,
       :begin_db_transaction, :rollback_db_transaction, :commit_db_transaction,
+      :transaction, :decrement_open_transactions, :increment_open_transactions,
       :referenced_tables,
       :create_or_replace_replication_trigger_function,
       :create_replication_trigger, :drop_replication_trigger, :replication_trigger_exists?,
