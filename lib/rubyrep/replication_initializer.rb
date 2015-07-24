@@ -387,6 +387,9 @@ module RR
         runner.execute
       end
 
+      # Initialize heartbeat file
+      FileUtils.touch(session.configuration.options[:heartbeat_file]) if session.configuration.options[:heartbeat_file]
+
       puts "Starting replication"
     end
   end
