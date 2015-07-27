@@ -64,7 +64,7 @@ module RR
     def run
       $stdout.write "-" if session.configuration.options[:replication_trace]
 
-      heartbeat
+      RR.heartbeat(session.configuration.options[:heartbeat_file])
 
       return unless [:left, :right].any? do |database|
         next false if session.configuration.send(database)[:mode] == :slave
@@ -152,12 +152,6 @@ module RR
       self.session = session
       self.sweeper = sweeper
       install_sweeper
-    end
-
-    def heartbeat
-      return if session.configuration.options[:heartbeat_file].nil?
-
-      FileUtils.touch(session.configuration.options[:heartbeat_file])
     end
   end
 end

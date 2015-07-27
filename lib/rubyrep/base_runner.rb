@@ -172,6 +172,8 @@ EOS
           processor.run do |diff_type, row|
             report_printer.report_difference diff_type, row
           end
+
+          RR.heartbeat(options[:heartbeat_file])
         end
       end
       signal_scanning_completion

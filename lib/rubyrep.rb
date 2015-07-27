@@ -71,5 +71,8 @@ Dir["#{File.dirname(__FILE__)}/rubyrep/replication_extenders/*.rb"].each do |ext
 end
 
 module RR
-  
+  def self.heartbeat(file)
+    require 'fileutils'
+    FileUtils.touch(file) unless file.nil?
+  end
 end
