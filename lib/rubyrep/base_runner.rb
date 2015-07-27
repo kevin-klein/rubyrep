@@ -161,6 +161,12 @@ EOS
       prepare_table_pairs(session.configured_table_pairs(options[:table_specs]))
     end
 
+    # Heartbeat after every 10k rows to reduce overhead while syncing large tables
+    def heartbeat
+      @heartbeats = @heartbeats.to_i + 1
+      RR.heartbeat(options[:heartbeat_file]) if @heartbeats % 10_000 == 0
+    end
+
     # Executes a run based on the established options.
     def execute
       session.configuration.exclude_rubyrep_tables
@@ -170,10 +176,9 @@ EOS
             table_pair[:left], table_pair[:right]
           processor.progress_printer = progress_printer
           processor.run do |diff_type, row|
+            heartbeat
             report_printer.report_difference diff_type, row
           end
-
-          RR.heartbeat(options[:heartbeat_file])
         end
       end
       signal_scanning_completion

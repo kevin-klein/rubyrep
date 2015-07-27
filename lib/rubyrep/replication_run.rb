@@ -90,6 +90,8 @@ module RR
 
         loop do
           $stdout.write "." if session.configuration.options[:replication_trace]
+          RR.heartbeat(session.configuration.options[:heartbeat_file])
+
           break unless loaders.update # ensure the cache of change log records is up-to-date
 
           loop do
