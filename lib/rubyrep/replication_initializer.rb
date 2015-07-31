@@ -379,11 +379,14 @@ module RR
         "#{table_pair[:left]}, #{table_pair[:right]}"
       end
 
+      # Initialize heartbeat file
+      RR.heartbeat(session.configuration.options[:heartbeat_file])
+
       unless session.configuration.options[:no_sync] || unsynced_table_specs.empty?
         puts "Executing initial table syncs"
         runner = SyncRunner.new
         runner.session = session
-        runner.options = {:table_specs => unsynced_table_specs}
+        runner.options = {:table_specs => unsynced_table_specs, :heartbeat_file => session.configuration.options[:heartbeat_file]}
         runner.execute
       end
 
