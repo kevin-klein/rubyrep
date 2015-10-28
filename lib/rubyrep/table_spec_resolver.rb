@@ -1,8 +1,8 @@
 module RR
-  
+
   # Resolves table specifications as provided e. g. in the command line of rrscan
   class TableSpecResolver
-    
+
     # The +Session+ instance from which the table specifications are resolved.
     attr_accessor :session
 
@@ -11,7 +11,8 @@ module RR
     def tables(database)
       @table_cache ||= {}
       unless @table_cache[database]
-        @table_cache[database] = session.send(database).tables
+        tables = session.send(database).tables
+        @table_cache[database] = tables
       end
       @table_cache[database]
     end
@@ -23,7 +24,7 @@ module RR
 
     # Returns all those tables from the given table_pairs that do not exist.
     # * +table_pairs+: same as described at #table_pairs_without_excluded
-    # 
+    #
     # Returns:
     # A hash with keys :+left+ and +:right+, with the value for each key being
     # an array of non-existing tables for the according database.
@@ -38,7 +39,7 @@ module RR
         memo
       end
     end
-    
+
     # Resolves the given array of table specificifications.
     # Table specifications are either
     # * strings as produced by BaseRunner#get_options or
@@ -48,11 +49,11 @@ module RR
     #
     # If +verify+ is +true+, raises an exception if any non-existing tables are
     # specified.
-    # 
+    #
     # Returns an array of table name pairs in Hash form.
     # For example something like
     #   [{:left => 'my_table', :right => 'my_table_backup'}]
-    # 
+    #
     # Takes care that a table is only returned once.
     def resolve(included_table_specs, excluded_table_specs = [], verify = true)
       table_pairs = expand_table_specs(included_table_specs, verify)

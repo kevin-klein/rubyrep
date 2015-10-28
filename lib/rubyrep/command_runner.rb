@@ -6,7 +6,7 @@ module RR
 
   # This class implements the functionality to dispatch rubyrep commands.
   class CommandRunner
-    
+
     # Returns a hash of all commands registered with #register.
     def self.commands
       @commands ||= {}
@@ -29,7 +29,7 @@ module RR
     def self.register(commands)
       self.commands.merge!(commands)
     end
-    
+
     # Prints the version to stderr
     def self.show_version
       $stdout.puts "rubyrep version #{RR::VERSION::STRING}"
@@ -62,7 +62,7 @@ EOS
 
         opts.on_tail("--help", "Show this message") do
           $stderr.puts opts
-          
+
           $stderr.puts "\nAvailable commands:"
           commands.sort.each do |command_name, command_hash|
             $stderr.puts "  #{command_name.ljust(15)} #{command_hash[:description]}"
@@ -72,7 +72,7 @@ EOS
         end
       end
 
-      begin
+      # begin
 
         # extract general options
         general_args = []
@@ -107,11 +107,11 @@ EOS
             end
           end
         end
-      rescue Exception => e
-        $stderr.puts "Exception caught: #{e}"
-        $stderr.puts e.backtrace if options && options[:verbose]
-        status = 1
-      end
+      # rescue Exception => e
+      #   $stderr.puts "Exception caught: #{e}"
+      #   $stderr.puts e.backtrace if options && options[:verbose]
+      #   status = 1
+      # end
 
       return status
     end
@@ -140,5 +140,3 @@ EOS
     end
   end
 end
-
-

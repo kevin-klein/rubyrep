@@ -84,7 +84,7 @@ module RR
     # Provides various PostgreSQL specific functionality required by Rubyrep.
     module PostgreSQLExtender
       RR::ConnectionExtenders.register :postgresql => self
-      
+
       # Returns an array of schemas in the current search path.
       def schemas
         unless @schemas
@@ -99,13 +99,13 @@ module RR
       # This overwrites the according ActiveRecord::PostgreSQLAdapter method
       # to make sure that also search paths with spaces work
       # (E. g. 'public, rr' instead of only 'public,rr')
-      def tables(name = nil)
-        select_all(<<-SQL, name).map { |row| row['tablename'] }
-          SELECT tablename
-            FROM pg_tables
-           WHERE schemaname IN (#{schemas})
-        SQL
-      end
+      # def tables(name = nil)
+      #   self.select_all(<<-SQL, name).map { |row| row['tablename'] }
+      #     SELECT tablename
+      #       FROM pg_tables
+      #      WHERE schemaname IN (#{schemas})
+      #   SQL
+      # end
 
       # Disables schema extraction from table names by overwriting the according
       # ActiveRecord method.
@@ -125,9 +125,9 @@ module RR
             (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
         end_sql
         raise "table '#{table}' does not exist" if row.nil?
-        
+
         row = self.select_one(<<-end_sql)
-          SELECT cons.conkey 
+          SELECT cons.conkey
           FROM pg_class           rel
           JOIN pg_constraint      cons ON (rel.oid = cons.conrelid)
           WHERE cons.contype = 'p' AND rel.relname = '#{table}' AND rel.relnamespace IN
@@ -135,7 +135,7 @@ module RR
         end_sql
         return [] if row.nil?
         column_parray = row['conkey']
-        
+
         # Change a Postgres Array of attribute numbers
         # (returned in String form, e. g.: "{1,2}") into an array of Integers
         column_ids = column_parray.sub(/^\{(.*)\}$/,'\1').split(',').map {|a| a.to_i}
@@ -216,11 +216,11 @@ module RR
           table_name,
           nil
         )
-        
+
         # create the Column objects
         columns = []
         while column_results.next
-          
+
           # generate type clause
           type_clause = column_results.get_string('TYPE_NAME')
           precision = column_results.get_int('COLUMN_SIZE')
@@ -239,7 +239,7 @@ module RR
           )
         end
         column_results.close
-        
+
         columns
       end if RUBY_PLATFORM =~ /java/
 
@@ -269,7 +269,7 @@ module RR
               AND a.attnum > 0 AND NOT a.attisdropped
             ORDER BY a.attnum
           end_sql
-    
+
           @column_defs[table_name] = rows.map {|row| [row['name'], row['type'], row['source'], row['notnull']]}
         end
         @column_defs[table_name]
@@ -278,4 +278,3 @@ module RR
     end
   end
 end
-

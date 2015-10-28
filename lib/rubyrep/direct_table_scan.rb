@@ -1,7 +1,7 @@
 module RR
 
   # Scans two tables for differences.
-  # Doesn't have any reporting functionality by itself. 
+  # Doesn't have any reporting functionality by itself.
   # Instead DirectTableScan#run yields all the differences for the caller to do with as it pleases.
   # Usage:
   #   1. Create a new DirectTableScan object and hand it all necessary information
@@ -12,7 +12,7 @@ module RR
 
     # The TypeCastingCursor for the left table
     attr_accessor :left_caster
-    
+
     # The TypeCastingCursor for the right table
     attr_accessor :right_caster
 
@@ -23,7 +23,7 @@ module RR
     def initialize(session, left_table, right_table = nil)
       super
     end
-    
+
     # Runs the table scan.
     # Calls the block for every found difference.
     # Differences are yielded with 2 parameters
@@ -42,8 +42,8 @@ module RR
         :row_buffer_size => scan_options[:row_buffer_size],
         :type_cast => true,
         :conditions => filter_conditions,
-        :from => session.left.primary_key_names(left_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_start; h },
-        :to => session.left.primary_key_names(left_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_end; h }
+        # :from => nil,#session.left.primary_key_names(left_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_start; h },
+        # :to => nil#session.left.primary_key_names(left_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_end; h }
       )
 
       event_filter = session.configuration.options_for_table(right_table)[:event_filter]
@@ -55,8 +55,8 @@ module RR
         :row_buffer_size => scan_options[:row_buffer_size],
         :type_cast => true,
         :conditions => filter_conditions,
-        :from => session.left.primary_key_names(right_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_start; h },
-        :to => session.left.primary_key_names(right_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_end; h }
+        # :from =>  session.left.primary_key_names(right_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_start; h },
+        # :to =>    session.left.primary_key_names(right_table).inject({}) { |h, k| h[k] = ActiveRecord::Base.rails_sequence_end; h }
       )
 
       left_row = right_row = nil
