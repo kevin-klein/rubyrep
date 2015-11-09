@@ -17,7 +17,7 @@ module RR
       :command => self,
       :description => 'Starts a replication process'
     }
-    
+
     # Provided options. Possible values:
     # * +:config_file+: path to config file
     attr_accessor :options
@@ -169,5 +169,3 @@ EOS
 
   end
 end
-
-

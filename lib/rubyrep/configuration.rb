@@ -22,7 +22,7 @@ module RR
     #     config.left[:logger] = STDOUT
     #     config.right[:logger] = Logger.new('rubyrep_debug.log')
     attr_accessor :right
-    
+
     # Returns true unless running on windows...
     def self.true_if_running_in_a_terminal_and_not_under_windows
       # Not using RUBY_PLATFORM as it should also work under JRuby
@@ -48,12 +48,12 @@ module RR
       :right_sequence_offset => 1,
       :replication_interval => 1,
       :auto_key_limit => 0,
-      :database_connection_timeout => 5,
+      :database_connection_timeout => 10,
 
       :rep_prefix => 'rr',
       :key_sep => '|',
     }
-    
+
     # General options.
     # Possible settings:
     # * :+proxy_block_size+: The proxy cursor will calculate the checksum for block_size number of records each.
@@ -144,7 +144,7 @@ module RR
     #     end
     #   end
     attr_reader :options
-    
+
     # Merges the specified +options+ hash into the existing options
     def options=(options)
       @options ||= {}
@@ -162,12 +162,12 @@ module RR
     def excluded_table_specs
       @excluded_table_specs ||= []
     end
-    
+
     # Ensures that rubyrep infrastructure tables are excluded
     def exclude_rubyrep_tables
       exclude_tables Regexp.new("^#{options[:rep_prefix]}_.*")
     end
-    
+
     # A list of tables having table specific options that should be considered
     # during processing (scanned, synced, ...)
     # +tables_with_options+ is a 2 element array with
@@ -195,7 +195,7 @@ module RR
       excluded_table_specs << table_spec unless excluded_table_specs.include?(table_spec)
     end
     alias_method :exclude_table, :exclude_tables
-    
+
     # Adds the specified options for the provided +table_spec+.
     # A +table_spec+ can be either
     # * a table name or
@@ -230,14 +230,14 @@ module RR
         yield table_options[0], table_options[1][key] if table_options[1].include? key
       end
     end
-    
+
     # Returns an option hash for the given table.
     # Accumulates options for all matching table specs (most recently added options
     # overwrite according options added before).
     #
     # Also includes the general options as returned by #options.
     # (Table specific options overwrite the general options).
-    # 
+    #
     # Possible option values are described under #add_tables.
     def options_for_table(table)
       resulting_options = options.clone
@@ -273,6 +273,6 @@ module RR
       self.right = {}
       self.options = DEFAULT_OPTIONS.clone
     end
-    
+
   end
 end
