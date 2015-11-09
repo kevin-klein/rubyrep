@@ -367,10 +367,13 @@ module RR
           if !trigger_exists? database, table_pair[database]
             create_trigger database, table_pair[database]
             unsynced = true
-          elsif !sync_complete? database, table_pair[database]
-            unsynced = true
           end
         end
+
+        if !sync_complete? :left, table_pair[:left]
+          unsynced = true
+        end
+
         if unsynced and table_options[:initial_sync]
           unsynced_table_pairs << table_pair
         end

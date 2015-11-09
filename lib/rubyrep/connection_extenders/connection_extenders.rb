@@ -130,7 +130,7 @@ module RR
         @@connection_cache ||= {}
 
         db_connection = connection_cache[config_checksum]
-        unless db_connection and db_connection.active?
+        unless db_connection && db_connection.active?
           db_connection = db_connect_without_cache config
           connection_cache[config_checksum] = db_connection
         end
