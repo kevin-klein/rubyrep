@@ -6,3 +6,5 @@ website/.*\.html$
 pkg/*
 tmp/*
 *.conf
+vendor/
+*.bat

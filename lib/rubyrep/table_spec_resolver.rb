@@ -67,7 +67,7 @@ module RR
         end
       end
 
-      table_pairs
+      (table_pairs.sort_by { |row| row[:left] }).reverse
     end
 
     # Helper for #resolve

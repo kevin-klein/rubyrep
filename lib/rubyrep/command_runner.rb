@@ -98,7 +98,7 @@ EOS
             if command == 'help' and args.size == 1
               run(['--help'])
               status = 0
-            elsif commands.include? command
+            elsif commands.include?(command)
               status = commands[command][:command].run(args.slice(1, 1_000_000))
             else
               $stderr.puts "Error: Unknown command specified.\n\n"

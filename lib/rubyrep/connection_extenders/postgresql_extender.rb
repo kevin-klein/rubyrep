@@ -118,43 +118,44 @@ module RR
 
       # Returns an ordered list of primary key column names of the given table
       def primary_key_names(table)
-        row = self.select_one(<<-end_sql)
-          SELECT relname
-          FROM pg_class
-          WHERE relname = '#{table}' and relnamespace IN
-            (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
-        end_sql
-        raise "table '#{table}' does not exist" if row.nil?
-
-        row = self.select_one(<<-end_sql)
-          SELECT cons.conkey
-          FROM pg_class           rel
-          JOIN pg_constraint      cons ON (rel.oid = cons.conrelid)
-          WHERE cons.contype = 'p' AND rel.relname = '#{table}' AND rel.relnamespace IN
-            (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
-        end_sql
-        return [] if row.nil?
-        column_parray = row['conkey']
-
-        # Change a Postgres Array of attribute numbers
-        # (returned in String form, e. g.: "{1,2}") into an array of Integers
-        column_ids = column_parray.sub(/^\{(.*)\}$/,'\1').split(',').map {|a| a.to_i}
-
-        columns = {}
-        rows = self.select_all(<<-end_sql)
-          SELECT attnum, attname
-          FROM pg_class           rel
-          JOIN pg_constraint      cons ON (rel.oid = cons.conrelid)
-          JOIN pg_attribute       attr ON (rel.oid = attr.attrelid and attr.attnum = any (cons.conkey))
-          WHERE cons.contype = 'p' AND rel.relname = '#{table}' AND rel.relnamespace IN
-            (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
-        end_sql
-        sorted_columns = []
-        if not rows.nil?
-          rows.each() {|r| columns[r['attnum'].to_i] = r['attname']}
-          sorted_columns = column_ids.map {|column_id| columns[column_id]}
-        end
-        sorted_columns
+        # row = self.select_one(<<-end_sql)
+        #   SELECT relname
+        #   FROM pg_class
+        #   WHERE relname = '#{table}' and relnamespace IN
+        #     (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
+        # end_sql
+        # raise "table '#{table}' does not exist" if row.nil?
+        #
+        # row = self.select_one(<<-end_sql)
+        #   SELECT cons.conkey
+        #   FROM pg_class           rel
+        #   JOIN pg_constraint      cons ON (rel.oid = cons.conrelid)
+        #   WHERE cons.contype = 'p' AND rel.relname = '#{table}' AND rel.relnamespace IN
+        #     (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
+        # end_sql
+        # return [] if row.nil?
+        # column_parray = row['conkey'][0].to_s
+        #
+        # # Change a Postgres Array of attribute numbers
+        # # (returned in String form, e. g.: "{1,2}") into an array of Integers
+        # column_ids = column_parray.sub(/^\{(.*)\}$/,'\1').split(',').map {|a| a.to_i}
+        #
+        # columns = {}
+        # rows = self.select_all(<<-end_sql)
+        #   SELECT attnum, attname
+        #   FROM pg_class           rel
+        #   JOIN pg_constraint      cons ON (rel.oid = cons.conrelid)
+        #   JOIN pg_attribute       attr ON (rel.oid = attr.attrelid and attr.attnum = any (cons.conkey))
+        #   WHERE cons.contype = 'p' AND rel.relname = '#{table}' AND rel.relnamespace IN
+        #     (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
+        # end_sql
+        # sorted_columns = []
+        # if not rows.nil?
+        #   rows.each() {|r| columns[r['attnum'].to_i] = r['attname']}
+        #   sorted_columns = column_ids.map {|column_id| columns[column_id]}
+        # end
+        # sorted_columns
+        ['id']
       end
 
       # Returns for each given table, which other tables it references via
@@ -191,57 +192,57 @@ module RR
         execute "SET search_path TO #{config[:schema_search_path] || 'public'}"
       end
 
-      # *** Moneky patch***
-      # Returns the column objects for the named table.
-      # Fixes JRuby schema support
-      def columns(table_name, name = nil)
-        jdbc_connection = @connection.connection # the actual JDBC DatabaseConnection
-        @unquoted_schema ||= select_one("show search_path")['search_path']
-
-        # check if table exists
-        table_results = jdbc_connection.meta_data.get_tables(
-          jdbc_connection.catalog,
-          @unquoted_schema,
-          table_name,
-          ["TABLE","VIEW","SYNONYM"].to_java(:string)
-        )
-        table_exists = table_results.next
-        table_results.close
-        raise "table '#{table_name}' not found" unless table_exists
-
-        # get ResultSet for columns of table
-        column_results = jdbc_connection.meta_data.get_columns(
-          jdbc_connection.catalog,
-          @unquoted_schema,
-          table_name,
-          nil
-        )
-
-        # create the Column objects
-        columns = []
-        while column_results.next
-
-          # generate type clause
-          type_clause = column_results.get_string('TYPE_NAME')
-          precision = column_results.get_int('COLUMN_SIZE')
-          scale = column_results.get_int('DECIMAL_DIGITS')
-          if precision > 0
-            type_clause += "(#{precision}#{scale > 0 ? ",#{scale}" : ""})"
-          end
-
-          # create column
-          columns << ::ActiveRecord::ConnectionAdapters::JdbcColumn.new(
-            @config,
-            column_results.get_string('COLUMN_NAME'),
-            column_results.get_string('COLUMN_DEF'),
-            type_clause,
-            column_results.get_string('IS_NULLABLE').strip == "NO"
-          )
-        end
-        column_results.close
-
-        columns
-      end if RUBY_PLATFORM =~ /java/
+      # # *** Moneky patch***
+      # # Returns the column objects for the named table.
+      # # Fixes JRuby schema support
+      # def columns(table_name, name = nil)
+      #   jdbc_connection = @connection.connection # the actual JDBC DatabaseConnection
+      #   @unquoted_schema ||= select_one("show search_path")['search_path']
+      #
+      #   # check if table exists
+      #   table_results = jdbc_connection.meta_data.get_tables(
+      #     jdbc_connection.catalog,
+      #     @unquoted_schema,
+      #     table_name,
+      #     ["TABLE","VIEW","SYNONYM"].to_java(:string)
+      #   )
+      #   table_exists = table_results.next
+      #   table_results.close
+      #   raise "table '#{table_name}' not found" unless table_exists
+      #
+      #   # get ResultSet for columns of table
+      #   column_results = jdbc_connection.meta_data.get_columns(
+      #     jdbc_connection.catalog,
+      #     @unquoted_schema,
+      #     table_name,
+      #     nil
+      #   )
+      #
+      #   # create the Column objects
+      #   columns = []
+      #   while column_results.next
+      #
+      #     # generate type clause
+      #     type_clause = column_results.get_string('TYPE_NAME')
+      #     precision = column_results.get_int('COLUMN_SIZE')
+      #     scale = column_results.get_int('DECIMAL_DIGITS')
+      #     if precision > 0
+      #       type_clause += "(#{precision}#{scale > 0 ? ",#{scale}" : ""})"
+      #     end
+      #
+      #     # create column
+      #     columns << ::ActiveRecord::ConnectionAdapters::JdbcColumn.new(
+      #       @config,
+      #       column_results.get_string('COLUMN_NAME'),
+      #       column_results.get_string('COLUMN_DEF'),
+      #       type_clause,
+      #       column_results.get_string('IS_NULLABLE').strip == "NO"
+      #     )
+      #   end
+      #   column_results.close
+      #
+      #   columns
+      # end if RUBY_PLATFORM =~ /java/
 
       # *** Monkey patch***
       # Returns the list of a table's column names, data types, and default values.
@@ -249,31 +250,31 @@ module RR
       # to
       # * work with tables containing a dot (".") and
       # * only look for tables in the current schema search path.
-      def column_definitions(table_name) #:nodoc:
-        @column_defs ||= {}
-        unless @column_defs[table_name]
-          rows = self.select_all <<-end_sql
-            SELECT
-              a.attname as name,
-              format_type(a.atttypid, a.atttypmod) as type,
-              d.adsrc as source,
-              a.attnotnull as notnull
-            FROM pg_attribute a LEFT JOIN pg_attrdef d
-              ON a.attrelid = d.adrelid AND a.attnum = d.adnum
-            WHERE a.attrelid = (
-              SELECT oid FROM pg_class
-              WHERE relname = '#{table_name}' AND relnamespace IN
-                (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
-              LIMIT 1
-              )
-              AND a.attnum > 0 AND NOT a.attisdropped
-            ORDER BY a.attnum
-          end_sql
-
-          @column_defs[table_name] = rows.map {|row| [row['name'], row['type'], row['source'], row['notnull']]}
-        end
-        @column_defs[table_name]
-      end
+      # def column_definitions(table_name) #:nodoc:
+      #   @column_defs ||= {}
+      #   unless @column_defs[table_name]
+      #     rows = self.select_all <<-end_sql
+      #       SELECT
+      #         a.attname as name,
+      #         format_type(a.atttypid, a.atttypmod) as type,
+      #         d.adsrc as source,
+      #         a.attnotnull as notnull
+      #       FROM pg_attribute a LEFT JOIN pg_attrdef d
+      #         ON a.attrelid = d.adrelid AND a.attnum = d.adnum
+      #       WHERE a.attrelid = (
+      #         SELECT oid FROM pg_class
+      #         WHERE relname = '#{table_name}' AND relnamespace IN
+      #           (SELECT oid FROM pg_namespace WHERE nspname in (#{schemas}))
+      #         LIMIT 1
+      #         )
+      #         AND a.attnum > 0 AND NOT a.attisdropped
+      #       ORDER BY a.attnum
+      #     end_sql
+      #
+      #     @column_defs[table_name] = rows.map {|row| [row['name'], row['type'], row['source'], row['notnull']]}
+      #   end
+      #   @column_defs[table_name]
+      # end
 
     end
   end

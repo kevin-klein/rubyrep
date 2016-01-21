@@ -89,7 +89,7 @@ EOS
           "Mandatory. Path to configuration file.") do |arg|
           options[:config_file] = arg
         end
-        
+
         add_specific_options(opts)
 
         opts.on_tail("--help", "Show this message") do
@@ -142,8 +142,8 @@ EOS
     def prepare_table_pairs(table_pairs)
       table_pairs
     end
-    
-    # Returns the active +Session+. 
+
+    # Returns the active +Session+.
     # Loads config file and creates session if necessary.
     def session
       unless @session
@@ -198,5 +198,3 @@ EOS
 
   end
 end
-
-
