@@ -92,7 +92,7 @@ def create_postgres_schema(config)
     create_table :rr_sequence_test do |t|
       t.column :name, :string
     end
-    
+
     create_table :rr_duplicate do |t|
       t.column :name, :string
     end
@@ -116,7 +116,7 @@ def drop_postgres_schema(config)
   end
 end
 
-# Creates the sample schema in the database specified by the given 
+# Creates the sample schema in the database specified by the given
 # configuration.
 # * :+database+: either :+left+ or +:right+
 # * :+config+: the Configuration object
@@ -124,15 +124,15 @@ def create_sample_schema(database, config)
   create_postgres_schema config.send(database)
 
   ActiveRecord::Base.establish_connection config.send(database)
-  
+
   ActiveRecord::Schema.define do
     create_table :scanner_text_key, :id => false do |t|
       t.column :text_id, :string
       t.column :name, :string
     end rescue nil
-    
+
     ActiveRecord::Base.connection.execute(<<-end_sql) rescue nil
-      ALTER TABLE scanner_text_key ADD CONSTRAINT scanner_text_key_pkey 
+      ALTER TABLE scanner_text_key ADD CONSTRAINT scanner_text_key_pkey
         PRIMARY KEY (text_id)
     end_sql
 
@@ -150,10 +150,10 @@ def create_sample_schema(database, config)
       t.column :first_id, :integer
       t.column :second_id, :integer
       t.column :name, :string
-    end rescue nil 
-    
+    end rescue nil
+
     ActiveRecord::Base.connection.execute(<<-end_sql) rescue nil
-      ALTER TABLE extender_combined_key ADD CONSTRAINT extender_combined_key_pkey 
+      ALTER TABLE extender_combined_key ADD CONSTRAINT extender_combined_key_pkey
         PRIMARY KEY (first_id, second_id)
     end_sql
 
@@ -193,27 +193,27 @@ def create_sample_schema(database, config)
     create_table :extender_inverted_combined_key, :id => false do |t|
       t.column :first_id, :integer
       t.column :second_id, :integer
-    end rescue nil 
-    
+    end rescue nil
+
     ActiveRecord::Base.connection.execute(<<-end_sql) rescue nil
-      ALTER TABLE extender_inverted_combined_key 
-        ADD CONSTRAINT extender_inverted_combined_key_pkey 
+      ALTER TABLE extender_inverted_combined_key
+        ADD CONSTRAINT extender_inverted_combined_key_pkey
         PRIMARY KEY (second_id, first_id)
     end_sql
 
     create_table :extender_without_key, :id => false do |t|
       t.column :first_id, :integer
       t.column :second_id, :integer
-    end rescue nil 
-    
+    end rescue nil
+
     create_table :extender_one_record do |t|
       t.column :name, :string
     end rescue nil
-    
+
     create_table :extender_no_record do |t|
       t.column :name, :string
     end rescue nil
-    
+
     create_table :extender_type_check do |t|
       t.column :decimal_test, :decimal, :precision => 10, :scale => 5
       t.column :timestamp, :timestamp
@@ -288,7 +288,7 @@ def create_sample_schema(database, config)
       t.column STRANGE_COLUMN, :string
     end
 
-    ActiveRecord::Base.connection.execute(<<-end_sql) 
+    ActiveRecord::Base.connection.execute(<<-end_sql)
       ALTER TABLE #{ActiveRecord::Base.connection.quote_table_name(STRANGE_TABLE)} ADD CONSTRAINT strange_table_fkey
         FOREIGN KEY (first_fk, second_fk)
         REFERENCES referenced_table(first_id, second_id)
@@ -337,7 +337,7 @@ def drop_sample_schema(config)
   drop_postgres_schema config
 
   ActiveRecord::Base.establish_connection config
-  
+
   ActiveRecord::Schema.define do
     drop_table :rr_referencing rescue nil
     drop_table :rr_duplicate rescue nil
@@ -363,14 +363,14 @@ def drop_sample_schema(config)
     drop_table :sequence_test rescue nil
     drop_table :left_table rescue nil
     drop_table :right_table rescue nil
-  end  
+  end
 
   ActiveRecord::Base.connection.disconnect!
 end
 
 class ExtenderCombinedKey < ActiveRecord::Base
-  set_table_name "extender_combined_key"
-  include CreateWithKey  
+  self.table_name = "extender_combined_key"
+  include CreateWithKey
 end
 
 class ScannerRecords < ActiveRecord::Base
@@ -378,17 +378,17 @@ class ScannerRecords < ActiveRecord::Base
 end
 
 class ScannerLeftRecordsOnly < ActiveRecord::Base
-  set_table_name "scanner_left_records_only"
+  self.table_name = "scanner_left_records_only"
   include CreateWithKey
 end
 
 class ExtenderOneRecord < ActiveRecord::Base
-  set_table_name "extender_one_record"
+  self.table_name = "extender_one_record"
   include CreateWithKey
 end
 
 class ExtenderTypeCheck < ActiveRecord::Base
-  set_table_name "extender_type_check"
+  self.table_name = "extender_type_check"
   include CreateWithKey
 end
 
@@ -409,13 +409,13 @@ def delete_all_and_create_shared_sample_data(config)
   ActiveRecord::Base.establish_connection config
   ScannerRecords.delete_all
   ScannerRecords.create_with_key :id => 1, :name => 'Alice - exists in both databases'
-  
+
   ExtenderOneRecord.delete_all
   ExtenderOneRecord.create_with_key :id => 1, :name => 'Alice'
-  
+
   ExtenderTypeCheck.delete_all
   ExtenderTypeCheck.create_with_key(
-    :id => 1, 
+    :id => 1,
     :decimal_test => 1.234,
     :timestamp => Time.local(2007,"nov",10,20,15,1),
     :multi_byte => "よろしくお願(ねが)いします yoroshiku onegai shimasu: I humbly ask for your favor.",
@@ -464,7 +464,7 @@ def create_sample_data
   ScannerLeftRecordsOnly.delete_all
   ScannerLeftRecordsOnly.create_with_key :id => 1, :name => 'Alice'
   ScannerLeftRecordsOnly.create_with_key :id => 2, :name => 'Bob'
-  
+
   # Create data in right table
   ActiveRecord::Base.establish_connection RR::Initializer.configuration.right
   ScannerRecords.create_with_key :id => 2, :name => 'Bob - right database version'
@@ -474,28 +474,28 @@ end
 
 namespace :db do
   namespace :test do
-    
+
     desc "Creates the test databases"
     task :create do
       create_database RR::Initializer.configuration.left rescue nil
       create_database RR::Initializer.configuration.right rescue nil
     end
-    
+
     desc "Drops the test databases"
     task :drop do
       drop_database RR::Initializer.configuration.left rescue nil
       drop_database RR::Initializer.configuration.right rescue nil
     end
-    
+
     desc "Rebuilds the test databases & schemas"
     task :rebuild => [:drop_schema, :drop, :create, :create_schema, :populate]
-    
+
     desc "Create the sample schemas"
     task :create_schema do
       create_sample_schema :left, RR::Initializer.configuration
       create_sample_schema :right, RR::Initializer.configuration rescue nil
     end
-    
+
     desc "Writes the sample data"
     task :populate do
       create_sample_data

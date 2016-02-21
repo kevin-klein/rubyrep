@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + '/spec_helper.rb'
+require File.dirname(__FILE__) + "/../config/test_config.rb"
 
 include RR
 
@@ -13,8 +14,8 @@ describe Committers::BufferedCommitter do
 
   # Stubs out the starting of transactions in the given Session.
   def stub_begin_transaction(session)
-    session.left.stub! :begin_db_transaction
-    session.right.stub! :begin_db_transaction
+    session.left.transaction_manager.stub! :begin_transaction
+    session.right.transaction_manager.stub! :begin_transaction
   end
 
   # Stubs out the executing of SQL statements for the given Session.
@@ -63,7 +64,7 @@ describe Committers::BufferedCommitter do
 
   it "maintain_activity_status should return false if activity marker does not exist" do
     config = deep_copy(standard_config)
-    config.options[:rep_prefix] = 'rx'
+    config.options[:rep_prefix] = 'rxfdsfkdsf'
     session = Session.new config
     stub_begin_transaction session
     stub_execute session
@@ -91,40 +92,22 @@ describe Committers::BufferedCommitter do
     committer.commit_frequency.should == Committers::BufferedCommitter::DEFAULT_COMMIT_FREQUENCY
   end
 
-  it "initialize should start transactions and setup rubyrep activity filtering" do
-    session = nil
-    begin
-      session = Session.new
-      session.left.should_receive(:begin_db_transaction)
-      session.right.should_receive(:begin_db_transaction)
-      session.left.select_one("select * from rr_running_flags").should be_nil # verify starting situation
-      committer = Committers::BufferedCommitter.new(session)
-
-      # rubyrep activity should be marked
-      session.left.select_one("select * from rr_running_flags").should_not be_nil
-      session.right.select_one("select * from rr_running_flags").should_not be_nil
-    ensure
-      session.left.execute "delete from rr_running_flags" if session
-      session.right.execute "delete from rr_running_flags" if session
-    end
-  end
-
   it "commit_db_transactions should commit the transactions in both databases" do
     session = Session.new
     stub_begin_transaction session
     stub_execute session
     committer = Committers::BufferedCommitter.new(session)
 
-    session.left.should_receive(:commit_db_transaction)
-    session.right.should_receive(:commit_db_transaction)
+    session.left.transaction_manager.should_receive(:commit_transaction)
+    session.right.transaction_manager.should_receive(:commit_transaction)
     committer.commit_db_transactions
   end
 
   it "commit_db_transactions should clear the activity marker table" do
     session = Session.new
     stub_begin_transaction session
-    session.left.stub!(:commit_db_transaction)
-    session.right.stub!(:commit_db_transaction)
+    session.left.transaction_manager.stub!(:commit_transaction)
+    session.right.transaction_manager.stub!(:commit_transaction)
     stub_execute session
     committer = Committers::BufferedCommitter.new(session)
 
@@ -135,11 +118,11 @@ describe Committers::BufferedCommitter do
 
   it "commit_db_transactions should not clear the activity marker table if it doesn't exist" do
     config = deep_copy(standard_config)
-    config.options[:rep_prefix] = 'rx'
+    config.options[:rep_prefix] = 'fsdtrie9g'
     session = Session.new config
     stub_begin_transaction session
-    session.left.stub!(:commit_db_transaction)
-    session.right.stub!(:commit_db_transaction)
+    session.left.transaction_manager.stub!(:commit_transaction)
+    session.right.transaction_manager.stub!(:commit_transaction)
     stub_execute session
     committer = Committers::BufferedCommitter.new(session)
 
@@ -154,8 +137,8 @@ describe Committers::BufferedCommitter do
     stub_execute session
     committer = Committers::BufferedCommitter.new(session)
 
-    session.left.should_receive(:begin_db_transaction)
-    session.right.should_receive(:begin_db_transaction)
+    session.left.transaction_manager.should_receive(:begin_transaction)
+    session.right.transaction_manager.should_receive(:begin_transaction)
     committer.begin_db_transactions
   end
 
@@ -172,7 +155,7 @@ describe Committers::BufferedCommitter do
 
   it "begin_db_transactions should not clear the activity marker table if it doesn't exist" do
     config = deep_copy(standard_config)
-    config.options[:rep_prefix] = 'rx'
+    config.options[:rep_prefix] = 'triutiuerioge'
     session = Session.new config
     stub_begin_transaction session
     stub_execute session
@@ -189,8 +172,8 @@ describe Committers::BufferedCommitter do
     stub_execute session
     committer = Committers::BufferedCommitter.new(session)
 
-    session.left.should_receive(:rollback_db_transaction)
-    session.right.should_receive(:rollback_db_transaction)
+    session.left.transaction_manager.should_receive(:rollback_transaction)
+    session.right.transaction_manager.should_receive(:rollback_transaction)
     committer.rollback_db_transactions
   end
 
@@ -219,7 +202,7 @@ describe Committers::BufferedCommitter do
     committer.should_receive(:exclude_rr_activity).with(:right, 'right_table').ordered
     session.right.should_receive(:insert_record).with('right_table', :dummy_values).ordered
     committer.should_receive(:commit).ordered
-    
+
     committer.insert_record(:right, 'right_table', :dummy_values)
   end
 
@@ -271,4 +254,3 @@ describe Committers::BufferedCommitter do
     committer.finalize false
   end
 end
-

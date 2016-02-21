@@ -113,6 +113,7 @@ module RR
       def insert_record(database, table, values)
         exclude_rr_activity database, table
         super
+        commit
       end
 
       # Updates the specified record in the specified database.
@@ -125,6 +126,7 @@ module RR
       def update_record(database, table, values, old_key = nil)
         exclude_rr_activity database, table
         super
+        commit
       end
 
       # Deletes the specified record in the specified database.
@@ -134,6 +136,7 @@ module RR
       def delete_record(database, table, values)
         exclude_rr_activity database, table
         super
+        commit
       end
 
       # Is called after the last insert / update / delete query.

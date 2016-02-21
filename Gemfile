@@ -1,4 +1,6 @@
 source 'http://rubygems.org'
 
-gem 'pg'
-gem 'activerecord', '4.2.2'
+gem 'activerecord-jdbc-adapter', platform: :jruby
+gem 'jdbc-postgres', platform: :jruby
+
+gem 'rspec', '~> 2.0'

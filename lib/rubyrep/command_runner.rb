@@ -72,7 +72,7 @@ EOS
         end
       end
 
-      # begin
+      begin
 
         # extract general options
         general_args = []
@@ -107,11 +107,11 @@ EOS
             end
           end
         end
-      # rescue Exception => e
-      #   $stderr.puts "Exception caught: #{e}"
-      #   $stderr.puts e.backtrace if options && options[:verbose]
-      #   status = 1
-      # end
+      rescue Exception => e
+        $stderr.puts "Exception caught: #{e}"
+        $stderr.puts e.backtrace if options && options[:verbose]
+        status = 1
+      end
 
       return status
     end

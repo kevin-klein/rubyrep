@@ -49,11 +49,6 @@ module RR
     # as soon as it is created.
     def self.db_connect_without_cache(config)
       adapter = config[:adapter]
-      if RUBY_PLATFORM =~ /java/
-        # As recommended in the activerecord-jdbc-adapter use the jdbc versions
-        # of the Adapters. E. g. instead of "postgresql", "jdbcpostgresql".
-        adapter = 'jdbc' + adapter unless adapter =~ /^jdbc/
-      end
 
       pool = ActiveRecord::Base.establish_connection(config)
       connection = pool.checkout
@@ -103,7 +98,7 @@ module RR
         if config[:logger].respond_to?(:debug)
           logger = config[:logger]
         else
-          logger = ActiveSupport::BufferedLogger.new(config[:logger])
+          logger = ActiveSupport::Logger.new(config[:logger])
         end
         db_connection.instance_variable_set :@logger, logger
         if ActiveSupport.const_defined?(:Notifications)

@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/spec_helper.rb'
 require 'yaml'
-require 'config/test_config.rb'
+require File.dirname(__FILE__) + '/../config/test_config.rb'
 
 include RR
 
@@ -40,7 +40,7 @@ describe "PostgreSQLReplication", :shared => true do
         'change_new_key' => nil,
         'change_type' => 'I'
       }
-      
+
     ensure
       session.left.rollback_db_transaction if session
     end

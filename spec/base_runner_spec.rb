@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + '/spec_helper.rb'
+require File.dirname(__FILE__) + "/../config/test_config.rb"
 
 include RR
 
@@ -14,7 +15,7 @@ describe BaseRunner do
     runner.options.should == nil
     status.should == 1
   end
-  
+
   it "process_options should make options as nil and return status as 1 if config option is not given" do
     # also verify that an error message is printed
     $stderr.should_receive(:puts).any_number_of_times
@@ -46,7 +47,7 @@ describe BaseRunner do
     runner.options.should == nil
     status.should == 0
   end
-  
+
   it "process_options should set the correct options" do
     runner = BaseRunner.new
     runner.process_options ["-c", "config_path", "table_spec1", "table_spec2"]
@@ -60,14 +61,14 @@ describe BaseRunner do
       runner.process_options ["-c", "config_path"]
     end
   end
-  
+
   it "process_options should assign the command line specified report printer" do
     org_printers = ScanReportPrinters.printers
     begin
       ScanReportPrinters.instance_eval { class_variable_set :@@report_printers, nil }
-      
+
       ScanReportPrinters.register :dummy_printer_class, "-y", "--printer_y[=arg]", "description"
-      
+
       runner = BaseRunner.new
       runner.stub!(:session)
       runner.process_options ["-c", "config_path", "--printer_y=arg_for_y", "table_spec"]
@@ -108,7 +109,7 @@ describe BaseRunner do
     BaseRunner.new.prepare_table_pairs(:dummy_table_pairs).
       should == :dummy_table_pairs
   end
-  
+
   it "run should not start a scan if the command line is invalid" do
     $stderr.should_receive(:puts).any_number_of_times
     BaseRunner.any_instance_should_not_receive(:execute) {
@@ -132,7 +133,7 @@ describe BaseRunner do
     runner.report_printer.should == :dummy_printer
     runner.report_printer # ensure the printer object is cached
   end
-  
+
   it "report_printer should return the ScanSummaryReporter if no other printer was chosen" do
     runner = BaseRunner.new
     runner.stub!(:session)
@@ -150,7 +151,7 @@ describe BaseRunner do
       printers[config_specified_printer_key][:printer_class]
     runner.progress_printer.should == config_specified_printer_class
   end
-  
+
   it "signal_scanning_completion should signal completion if the scan report printer supports it" do
     printer = mock("printer")
     printer.should_receive(:scanning_finished)
@@ -159,7 +160,7 @@ describe BaseRunner do
     runner.stub!(:report_printer).and_return(printer)
     runner.signal_scanning_completion
   end
-  
+
   it "signal_scanning_completion should not signal completion if the scan report printer doesn't supports it" do
     printer = mock("printer")
     printer.should_not_receive(:scanning_finished)
