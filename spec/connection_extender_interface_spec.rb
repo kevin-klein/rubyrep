@@ -2,11 +2,12 @@
 require File.dirname(__FILE__) + '/spec_helper.rb'
 require 'yaml'
 require 'digest/md5'
+require File.dirname(__FILE__) + "/../config/test_config.rb"
 
 include RR
 
 # All ConnectionExtenders need to pass this spec
-describe "ConnectionExtender", :shared => true do
+shared_examples_for "ConnectionExtender" do
   before(:each) do
   end
 
@@ -18,13 +19,13 @@ describe "ConnectionExtender", :shared => true do
 
   it "select_cursor should handle zero result queries" do
     session = Session.new
-    result = session.left.select_cursor :table => 'extender_no_record'
+    result = session.left.select_cursor table: 'extender_no_record'
     result.next?.should be_false
   end
 
   it "select_cursor should work if row_buffer_size is smaller than table size" do
     session = Session.new
-    result = session.left.select_cursor(:table => 'scanner_records', :row_buffer_size => 2)
+    result = session.left.select_cursor(table: 'scanner_records', row_buffer_size: 2)
     result.next_row
     result.next_row
     result.next_row['id'].should == 3
@@ -33,20 +34,20 @@ describe "ConnectionExtender", :shared => true do
 
   it "select_cursor should allow iterating through records" do
     session = Session.new
-    result = session.left.select_cursor :table => 'extender_one_record'
+    result = session.left.select_cursor table: 'extender_one_record'
     result.next?.should be_true
     result.next_row.should == {'id' => 1, 'name' => 'Alice'}
   end
 
   it "select_cursor next_row should raise if there are no records" do
     session = Session.new
-    result = session.left.select_cursor :table => 'extender_no_record'
+    result = session.left.select_cursor table: 'extender_no_record'
     lambda {result.next_row}.should raise_error(RuntimeError, 'no more rows available')
   end
 
   it "select_cursor next_row should handle multi byte characters correctly" do
     session = Session.new
-    result = session.left.select_record(:table => "extender_type_check")['multi_byte'].
+    result = session.left.select_record(table: "extender_type_check")['multi_byte'].
       should == "よろしくお願(ねが)いします yoroshiku onegai shimasu: I humbly ask for your favor."
   end
 
@@ -65,8 +66,8 @@ describe "ConnectionExtender", :shared => true do
       row['md5'].should == Digest::MD5.hexdigest(org_data)
 
       result_data = session.left.select_record(
-        :table => "extender_type_check",
-        :row_keys => ["id" => 6]
+        table: "extender_type_check",
+        row_keys: ["id" => 6]
       )['binary_test']
       Digest::MD5.hexdigest(result_data).should == Digest::MD5.hexdigest(org_data)
     ensure
@@ -86,8 +87,8 @@ describe "ConnectionExtender", :shared => true do
       session.left.execute sql
 
       result_data = session.left.select_record(
-        :table => "extender_type_check",
-        :row_keys => ["id" => 2]
+        table: "extender_type_check",
+        row_keys: ["id" => 2]
       )["text_test"]
     ensure
       session.left.transaction_manager.rollback_transaction
@@ -97,7 +98,7 @@ describe "ConnectionExtender", :shared => true do
 
   it "cursors returned by select_cursor should support clear" do
     session = Session.new
-    result = session.left.select_cursor :table => 'extender_one_record'
+    result = session.left.select_cursor table: 'extender_one_record'
     result.next?.should be_true
     result.should respond_to(:clear)
     result.clear

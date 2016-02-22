@@ -39,7 +39,7 @@ module RR
     def next?
       unless self.rows
         # Try to load some records
-        
+
         if options[:query] and last_row != nil
           # A query was directly specified and all it's rows were returned
           # ==> Finished.
@@ -98,13 +98,13 @@ module RR
     include DRbUndumped
 
     extend Forwardable
-    
+
     # The database connection
     attr_accessor :connection
 
     # A hash as described by ActiveRecord::Base#establish_connection
     attr_accessor :config
-    
+
     # Forward certain methods to the proxied database connection
     def_delegators :connection,
       :columns, :quote_column_name,
@@ -121,16 +121,16 @@ module RR
     #   * key: table name
     #   * value: array of primary key names
     attr_accessor :primary_key_names_cache
-    
+
     # Hash to register cursors.
     # Purpose:
     #   Objects only referenced remotely via DRb can be garbage collected.
     #   We register them in this hash to protect them from unintended garbage collection.
     attr_accessor :cursors
-    
+
     # 2-level Hash of table_name => column_name => Column objects.
     attr_accessor :table_columns
-    
+
     # Hash of table_name => array of column names pairs.
     attr_accessor :table_column_names
 
@@ -138,7 +138,7 @@ module RR
     # * key: table_name
     # * value: array of primary key names
     attr_accessor :manual_primary_keys
-    
+
     # Returns an array of primary key names for the given +table_name+.
     # Caches the result for future calls. Allows manual overwrites through
     # the Configuration options +:primary_key_names+ or :+primary_key_only_limit+.
@@ -149,7 +149,7 @@ module RR
     #   * :+raw+: if +true+, than don't use manual overwrites and don't cache
     def primary_key_names(table_name, options = {})
       return connection.primary_key_names(table_name) if options[:raw]
-      
+
       self.primary_key_names_cache ||= {}
       result = primary_key_names_cache[table_name]
       unless result
@@ -158,7 +158,7 @@ module RR
       end
       result
     end
-    
+
     # Creates a table
     # Call forwarded to ActiveRecord::ConnectionAdapters::SchemaStatements#create_table
     # Provides an empty block (to prevent DRB from calling back the client)
@@ -170,7 +170,7 @@ module RR
     def cursors
       @cursors ||= {}
     end
-    
+
     # Store a cursor in the register to protect it from the garbage collector.
     def save_cursor(cursor)
       cursors[cursor] = cursor
@@ -210,7 +210,7 @@ module RR
       cursor.clear
       row
     end
-    
+
     # Reads the designated records from the database.
     # Refer to #select_cursor for details parameter description.
     # Returns an array of matching rows (column_name => value hashes).
@@ -246,7 +246,7 @@ module RR
 
       self.connection.disconnect!
     end
-    
+
     # Quotes the given value. It is assumed that the value belongs to the specified column name and table name.
     # Caches the column objects for higher speed.
     def quote_value(table, column, value)
@@ -257,10 +257,10 @@ module RR
       end
       connection.quote value, table_columns[table][column]
     end
-    
+
     # Create a cursor for the given table.
     #   * +cursor_class+: should specify the Cursor class (e. g. ProxyBlockCursor or ProxyRowCursor).
-    #   * +table+: name of the table 
+    #   * +table+: name of the table
     #   * +options+: An option hash that is used to construct the SQL query. See ProxyCursor#construct_query for details.
     def create_cursor(cursor_class, table, options = {})
       cursor = cursor_class.new self, table
@@ -268,13 +268,13 @@ module RR
       save_cursor cursor
       cursor
     end
-    
+
     # Destroys the provided cursor and removes it from the register
     def destroy_cursor(cursor)
       cursor.destroy
       cursors.delete cursor
     end
-    
+
     # Returns an array of column names of the given table name.
     # The array is ordered in the sequence as returned by the database.
     # The result is cached for higher speed.
@@ -285,26 +285,26 @@ module RR
       end
       table_column_names[table]
     end
-  
-    # Returns a list of quoted column names for the given +table+ as comma 
+
+    # Returns a list of quoted column names for the given +table+ as comma
     # separated string.
     def quote_column_list(table)
-      column_names(table).map do |column_name| 
+      column_names(table).map do |column_name|
         quote_column_name(column_name)
       end.join(', ')
     end
     private :quote_column_list
-    
+
     # Returns a list of quoted primary key names for the given +table+ as comma
     # separated string.
     def quote_key_list(table)
-      primary_key_names(table).map do |column_name| 
+      primary_key_names(table).map do |column_name|
         quote_column_name(column_name)
       end.join(', ')
     end
     private :quote_key_list
-    
-    
+
+
     # Generates an sql condition string for the given +table+ based on
     #   * +row+: a hash of primary key => value pairs designating the target row
     #   * +condition+: the type of sql condition (something like '>=' or '=', etc.)
@@ -364,7 +364,7 @@ module RR
 
       query
     end
-    
+
     # Returns an SQL insert query for the given +table+ and +values+.
     # +values+ is a hash of column_name => value pairs.
     def table_insert_query(table, values)
@@ -377,13 +377,13 @@ module RR
       end.join(', ') << ')'
       query
     end
-    
+
     # Inserts the specified records into the named +table+.
     # +values+ is a hash of column_name => value pairs.
     def insert_record(table, values)
       execute table_insert_query(table, values)
     end
-    
+
     # Returns an SQL update query.
     # * +table+: name of the target table
     # * +values+: a hash of column_name => value pairs
@@ -401,7 +401,7 @@ module RR
         quote_value(table, key, org_key[key])
       end.join(', ') << ")"
     end
-    
+
     # Updates the specified records of the specified table.
     # * +table+: name of the target table
     # * +values+: a hash of column_name => value pairs.
@@ -423,7 +423,7 @@ module RR
         quote_value(table, key, values[key])
       end.join(', ') << ")"
     end
-    
+
     # Deletes the specified record from the named +table+.
     # +values+ is a hash of column_name => value pairs. (Only the primary key
     # values will be used and must be included in the hash.)

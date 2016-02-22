@@ -43,7 +43,6 @@ describe LoggedChangeLoader do
 
   it "oldest_change_time should return the time of the oldest change" do
     session = Session.new
-    session.left.begin_db_transaction
     begin
       time = Time.now
       session.left.insert_record 'rr_pending_changes', {
@@ -61,7 +60,7 @@ describe LoggedChangeLoader do
       loader = LoggedChangeLoader.new session, :left
       loader.oldest_change_time.should.to_s == time.to_s
     ensure
-      session.left.rollback_db_transaction
+      session.left.connection.execute('delete from rr_pending_changes')
     end
   end
 

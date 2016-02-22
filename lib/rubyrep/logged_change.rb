@@ -1,7 +1,7 @@
 module RR
-  
+
   # Describes a single logged record change.
-  # 
+  #
   # Note:
   # The change loading functionality depends on the current database session
   # being executed in an open database transaction.

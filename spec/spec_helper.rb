@@ -29,8 +29,8 @@ end
 class Module
   # Used to verify that an instance of the class / module receives a call of the
   # specified method.
-  # This is for cases where a method call has to be mocked of an object that is 
-  # not yet created. 
+  # This is for cases where a method call has to be mocked of an object that is
+  # not yet created.
   # (Couldn't find out how to do that using existing rspec mocking features.)
   def any_instance_should_receive(method, &blck)
     tmp_method = "original_before_mocking_#{method}".to_sym
@@ -46,10 +46,10 @@ class Module
     self.send :alias_method, method, tmp_method rescue nil
   end
 
-  # Used to verify that an instance of the class / module does not receive a 
+  # Used to verify that an instance of the class / module does not receive a
   # call of the specified method.
-  # This is for cases where a method call has to be mocked of an object that is 
-  # not yet created. 
+  # This is for cases where a method call has to be mocked of an object that is
+  # not yet created.
   # (Couldn't find out how to do that using existing rspec mocking features.)
   def any_instance_should_not_receive(method, &blck)
     tmp_method = "original_before_mocking_#{method}".to_sym
@@ -84,24 +84,6 @@ class ActiveRecord::Base
   end
 end
 
-# If number_of_calls is :once, mock ActiveRecord for 1 call.
-# If number_of_calls is :twice, mock ActiveRecord for 2 calls.
-def mock_active_record(number_of_calls)
-  ConnectionExtenders::DummyActiveRecord.should_receive(:establish_connection).send(number_of_calls) \
-    .and_return {|config| $used_config = config}
-    
-  dummy_connection = Object.new
-  # We have a spec testing behaviour for non-existing extenders.
-  # So extend might not be called in all cases
-  dummy_connection.stub!(:extend)
-  dummy_connection.stub!(:tables).and_return([])
-  dummy_connection.stub!(:initialize_search_path)
-  dummy_connection.stub!(:select_one).and_return({'x' => '2'})
-    
-  ConnectionExtenders::DummyActiveRecord.should_receive(:connection).send(number_of_calls) \
-    .and_return {dummy_connection}
-end
-
 # Creates a mock ProxyConnection with the given
 #   * mock_table: name of the mock table
 #   * primary_key_names: array of mock primary column names
@@ -122,28 +104,28 @@ def create_mock_proxy_connection(mock_table, primary_key_names, column_names = n
     .any_number_of_times \
     .with(an_instance_of(String), an_instance_of(String), anything) \
     .and_return { |table, column, value| value}
-  
+
   session.should_receive(:connection) \
     .any_number_of_times \
     .and_return {dummy_connection}
-  
+
   session.should_receive(:quote_column_name) \
     .any_number_of_times \
     .with(an_instance_of(String)) \
     .and_return { |column_name| "'#{column_name}'" }
-      
+
   session.should_receive(:quote_table_name) \
     .any_number_of_times \
     .with(an_instance_of(String)) \
     .and_return { |table_name| "'#{table_name}'" }
-      
+
   session
 end
 
 # Turns an SQL query into a regular expression:
 #   * Handles quotes (differing depending on DBMS).
 #   * Handles round brackets (escaping with backslash to make them literals).
-#   * Removes line breaks and double spaces 
+#   * Removes line breaks and double spaces
 #     (allowing use of intendation and line continuation)
 # Returns the regular expression created from the provided +sql+ string.
 def sql_to_regexp(sql)
@@ -152,7 +134,7 @@ def sql_to_regexp(sql)
       .gsub("'", 'E?.') \
       .gsub('"', 'E?.'))
 end
-  
+
 # Returns a deep copy of the provided object. Works also for Proc objects or
 # objects referencing Proc objects.
 def deep_copy(object)
@@ -245,14 +227,14 @@ def start_proxy(host, port)
     bin_path = File.join(File.dirname(__FILE__), "..", "bin", "rubyrep")
     ruby = RUBY_PLATFORM =~ /java/ ? 'jruby' : 'ruby'
     cmd = "#{ruby} #{bin_path} proxy -h #{host} -p #{port}"
-    Thread.new {system cmd}    
+    Thread.new {system cmd}
   else
     url = "druby://#{host}:#{port}"
-    DRb.start_service(url, DatabaseProxy.new)    
+    DRb.start_service(url, DatabaseProxy.new)
   end
 end
 
-# Set to true if the proxy as per SPEC_PROXY_CONFIG is running 
+# Set to true if the proxy as per SPEC_PROXY_CONFIG is running
 $proxy_confirmed_running = false
 
 # Starts a proxy as per left proxy settings defined in config/proxied_test_config.rb.
@@ -271,10 +253,10 @@ def ensure_proxy
     rescue DRb::DRbConnError => e
       # Proxy not yet running ==> start it
       start_proxy proxied_config.left[:proxy_host], proxied_config.left[:proxy_port]
-      
+
       maximum_startup_time = 5 # maximum time in seconds for the proxy to start
       waiting_time = 0.1 # time to wait between connection attempts
-      
+
       time = 0.0
       ping_response = ''
       # wait for the proxy to start up and become operational
@@ -300,7 +282,7 @@ def ensure_proxy
         raise "Could not start proxy"
       end
     end
-    
+
     # if we got till here, then a proxy is running or was successfully started
     $proxy_confirmed_running = true
   end

@@ -4,7 +4,7 @@ require File.dirname(__FILE__) + '/../config/test_config.rb'
 
 include RR
 
-describe "PostgreSQLReplication", :shared => true do
+shared_examples_for "PostgreSQLReplication" do
   before(:each) do
   end
 
@@ -12,17 +12,13 @@ describe "PostgreSQLReplication", :shared => true do
     session = nil
     begin
       session = Session.new
-      session.left.begin_db_transaction
-      unless session.left.select_all("select lanname from pg_language where lanname = 'plpgsql'").empty?
-        session.left.execute "DROP LANGUAGE plpgsql"
-      end
       params = {
-        :trigger_name => 'rr_trigger_test',
-        :table => 'trigger_test',
-        :keys => ['first_id', 'second_id'],
-        :log_table => 'rr_pending_changes',
-        :key_sep => '|',
-        :exclude_rr_activity => false,
+        trigger_name: 'rr_trigger_test',
+        table: 'trigger_test',
+        keys: ['first_id', 'second_id'],
+        log_table: 'rr_pending_changes',
+        key_sep: '|',
+        exclude_rr_activity: false,
       }
       session.left.create_replication_trigger params
       session.left.insert_record 'trigger_test', {
@@ -42,7 +38,8 @@ describe "PostgreSQLReplication", :shared => true do
       }
 
     ensure
-      session.left.rollback_db_transaction if session
+      session.left.execute('delete from rr_pending_changes')
+      session.left.execute('delete from trigger_test')
     end
   end
 end

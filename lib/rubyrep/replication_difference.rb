@@ -11,7 +11,7 @@ module RR
 
     # The current LoggedChangeLoaders instance
     attr_accessor :loaders
-    
+
     # The type of the difference. Either
     # * :+left+: change in left database
     # * :+right+: change in right database
@@ -66,9 +66,10 @@ module RR
       changes[:right].load
       self.type = DIFF_TYPES[changes[:left].type][changes[:right].type]
     end
-    
+
     # Loads a difference
     def load
+      loaders.update
       change_times = {}
       [:left, :right].each do |database|
         changes[database] = LoggedChange.new loaders[database]

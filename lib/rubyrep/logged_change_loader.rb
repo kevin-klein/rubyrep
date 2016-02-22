@@ -1,5 +1,5 @@
 module RR
-  
+
   # Makes management of logged change loaders easier
   class LoggedChangeLoaders
 
@@ -42,7 +42,7 @@ module RR
 
     # Current mode of database (either :+master+ or :+slave+)
     attr_accessor :mode
-    
+
     # The current +ProxyConnection+.
     attr_accessor :connection
 
@@ -101,7 +101,7 @@ module RR
     def update(options = {:forced => false, :expire_time => 1})
       return false if self.mode == :slave
       return false unless options[:forced] or Time.now - self.last_updated >= options[:expire_time]
-      
+
       self.last_updated = Time.now
 
       # First, let's use a LIMIT clause (via :row_buffer_size option) to verify

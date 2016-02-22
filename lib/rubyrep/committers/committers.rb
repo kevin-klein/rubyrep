@@ -129,8 +129,8 @@ module RR
       # the next test case finds the original test data.
       def self.rollback_current_session
         if self.current_session
-          self.current_session.left.rollback_db_transaction
-          self.current_session.right.rollback_db_transaction
+          self.current_session.left.transaction_manager.rollback_transaction
+          self.current_session.right.transaction_manager.rollback_transaction
           self.current_session = nil
         end
       end
