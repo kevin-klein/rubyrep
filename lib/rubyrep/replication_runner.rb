@@ -150,7 +150,7 @@ EOS
           end
           self.termination_requested = true
         end
-        @termination_mutex.unlock if $rubyrep_shutdown
+        @termination_mutex.unlock if $rubyrep_shutdown && @termination_mutex
         pause_replication
       end
     end

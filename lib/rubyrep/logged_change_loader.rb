@@ -27,7 +27,7 @@ module RR
 
     # Forces an update of the change log cache
     def update
-      [:left, :right].any? {|database| self[database].update :forced => true}
+      [:left, :right].map {|database| self[database].update forced: true}
     end
   end
 
@@ -98,9 +98,9 @@ module RR
     # Options is a hash determining when the update is actually executed:
     # * :+expire_time+: cache is older than the given number of seconds
     # * :+forced+: if +true+ update the cache even if not yet expired
-    def update(options = {:forced => false, :expire_time => 1})
+    def update(options = {forced: false, expire_time: 1})
       return false if self.mode == :slave
-      return false unless options[:forced] or Time.now - self.last_updated >= options[:expire_time]
+      return false unless options[:forced] || Time.now - self.last_updated >= options[:expire_time]
 
       self.last_updated = Time.now
 
@@ -109,25 +109,26 @@ module RR
       # (If there are many pending changes, this is (at least with PostgreSQL)
       # much faster.)
       cursor = connection.select_cursor(
-        :table => change_log_table,
-        :from => {'id' => current_id},
-        :exclude_starting_row => true,
-        :row_buffer_size => 1
+        table: change_log_table,
+        from: {'id' => current_id},
+        exclude_starting_row: true,
+        row_buffer_size: 1
       )
       return false unless cursor.next?
 
       # Something is here. Let's actually load it.
       cursor = connection.select_cursor(
-        :table => change_log_table,
-        :from => {'id' => current_id},
-        :exclude_starting_row => true,
-        :type_cast => true,
-        :row_buffer_size => session.configuration.options[:row_buffer_size]
+        table: change_log_table,
+        from: {'id' => current_id},
+        exclude_starting_row: true,
+        type_cast: true,
+        row_buffer_size: session.configuration.options[:row_buffer_size]
       )
 
       start_count = self.change_array.length
       while cursor.next?
         change = cursor.next_row
+
         self.current_id = change['id']
         self.change_array << change
         change['array_index'] = self.change_array.size - 1

@@ -79,10 +79,7 @@ describe Syncers::OneWaySyncer do
   end
 
   it "default_option should return the correct default options" do
-    Syncers::OneWaySyncer.default_options.should == {
-      :direction => :right,
-      :delete => false, :update => true, :insert => true
-    }
+    Syncers::OneWaySyncer.default_options.should == {:left_record_handling=>:insert, :right_record_handling=>:insert, :sync_conflict_handling=>:ignore, :logged_sync_events=>[:ignored_conflicts]}
   end
 
   it "sync_difference should only delete if :delete option is given" do

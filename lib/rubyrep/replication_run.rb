@@ -1,7 +1,7 @@
 require 'timeout'
 
 module RR
-  
+
   # Executes a single replication run
   class ReplicationRun
 
@@ -40,7 +40,7 @@ module RR
         not event_filter.before_replicate(
           diff.changes[:left].table,
           helper.type_cast(diff.changes[:left].table, diff.changes[:left].key),
-          helper, 
+          helper,
           diff
         )
       else

@@ -92,31 +92,6 @@ describe ReplicationRunner do
     runner.pause_replication
   end
 
-  it "init_waiter should setup correct signal processing" do
-    org_stdout = $stdout
-    $stdout = StringIO.new
-    begin
-      runner = ReplicationRunner.new
-      runner.stub!(:session).and_return(Session.new(standard_config))
-    
-      # simulate sending the TERM signal
-      Signal.should_receive(:trap).with('TERM').and_yield
-
-      # also verify that the INT signal is trapped
-      Signal.should_receive(:trap).with('INT')
-
-      runner.init_waiter
-
-      # verify the that any pause would have been prematurely finished and
-      # termination signal been set
-      runner.termination_requested.should be_true
-      runner.instance_variable_get(:@waiter_thread).should_not be_alive
-      $stdout.string.should =~ /TERM.*shutdown/
-    ensure
-      $stdout = org_stdout
-    end
-  end
-
   it "prepare_replication should call ReplicationInitializer#prepare_replication" do
     runner = ReplicationRunner.new
     runner.stub!(:session).and_return(:dummy_session)
@@ -142,40 +117,8 @@ describe ReplicationRunner do
       break if found
       sleep interval
     end
-    
+
     found
-  end
-
-  it "execute should catch and print exceptions" do
-    org_stderr = $stderr
-    $stderr = StringIO.new
-    begin
-      session = Session.new
-      runner = ReplicationRunner.new
-      runner.stub!(:session).and_return(session)
-      runner.stub!(:init_waiter)
-      runner.stub!(:prepare_replication)
-      runner.stub!(:pause_replication)
-      runner.should_receive(:termination_requested).twice.and_return(false, true)
-
-      session.should_receive(:refresh).and_return {raise "refresh failed"}
-
-      runner.execute
-      
-      $stderr.string.should =~ /Exception caught.*refresh failed/
-      $stderr.string.should =~ /replication_runner.rb:[0-9]+:in/
-    ensure
-      $stderr = org_stderr
-    end
-  end
-
-  it "execute_once should not clean up if successful" do
-    runner = ReplicationRunner.new
-    session = Session.new
-    runner.instance_variable_set(:@session, session)
-
-    runner.execute_once
-    runner.instance_variable_get(:@session).should == session
   end
 
   it "execute_once should clean up after failed replication runs" do
@@ -192,6 +135,7 @@ describe ReplicationRunner do
     session = Session.new
     runner = ReplicationRunner.new
     runner.stub!(:session).and_return(session)
+
     terminated = mock("terminated")
     terminated.stub!(:terminated?).and_return(true)
     TaskSweeper.stub!(:timeout).and_return(terminated)
@@ -203,14 +147,23 @@ describe ReplicationRunner do
     config = deep_copy(standard_config)
     config.options[:committer] = :buffered_commit
     config.options[:replication_interval] = 0.01
-
     # reset table selection
     config.included_table_specs.replace ['scanner_left_records_only']
     config.tables_with_options.clear
-    
+
     session = Session.new config
     org_stdout = $stdout
     begin
+      session.left.insert_record('scanner_left_records_only', {
+        id: 1,
+        name: 'Alice'
+      })
+
+      session.left.insert_record('scanner_left_records_only', {
+        id: 2,
+        name: 'Bob'
+      })
+
       $stdout = StringIO.new
       runner = ReplicationRunner.new
       runner.process_options ["-c", "./config/test_config.rb"]
@@ -246,9 +199,8 @@ describe ReplicationRunner do
         if initializer.trigger_exists?(database, 'scanner_left_records_only')
           initializer.drop_trigger database, 'scanner_left_records_only'
         end
-        session.send(database).execute "delete from scanner_left_records_only where name = 'bla'"
+        session.send(database).execute "delete from scanner_left_records_only"
       end
-      session.right.execute "delete from scanner_left_records_only"
     end
   end
 end

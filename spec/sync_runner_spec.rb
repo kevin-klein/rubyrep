@@ -4,6 +4,47 @@ include RR
 
 describe SyncRunner do
   before(:each) do
+    session = Session.new
+
+    session.left.execute('delete from scanner_records')
+    session.right.execute('delete from scanner_records')
+
+    session.left.insert_record('scanner_records', {
+      id: 2,
+      name: 'Bob - left database version'
+    })
+
+    session.left.insert_record('scanner_records', {
+      id: 3,
+      name: 'Charlie - exists in left database only'
+    })
+
+    session.left.insert_record('scanner_records', {
+      id: 5,
+      name: 'Eve - exists in left database only'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 2,
+      name: 'Bob - right database version'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 4,
+      name: 'Dave - exists in right database only'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 6,
+      name: 'Fred - exists in right database only'
+    })
+  end
+
+  after(:each) do
+    session = Session.new
+
+    session.left.execute('delete from scanner_records')
+    session.right.execute('delete from scanner_records')
   end
 
   it "should register itself with CommandRunner" do
@@ -32,8 +73,6 @@ describe SyncRunner do
     old_config, Initializer.configuration = Initializer.configuration, Configuration.new
 
     session = Session.new(standard_config)
-    session.left.begin_db_transaction
-    session.right.begin_db_transaction
 
     $stdout = StringIO.new
     begin
@@ -48,16 +87,12 @@ describe SyncRunner do
       $stdout.string.should =~
         /scanner_records .* 5\n/
 
-      left_records = session.left.connection.select_all("select * from scanner_records order by id")
-      right_records = session.right.connection.select_all("select * from scanner_records order by id")
+      left_records = session.left.connection.select_all("select * from scanner_records order by id").to_hash
+      right_records = session.right.connection.select_all("select * from scanner_records order by id").to_hash
       left_records.should == right_records
     ensure
       $stdout = org_stdout
       Initializer.configuration = old_config if old_config
-      if session
-        session.left.rollback_db_transaction
-        session.right.rollback_db_transaction
-      end
     end
   end
 

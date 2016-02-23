@@ -4,6 +4,50 @@ include RR
 
 describe ScanRunner do
   before(:each) do
+    session = Session.new
+
+    session.left.execute('delete from scanner_records')
+    session.right.execute('delete from scanner_records')
+
+    session.left.insert_record('scanner_records', {
+      id: 2,
+      name: 'Bob - left database version'
+    })
+
+    session.left.insert_record('scanner_records', {
+      id: 3,
+      name: 'Charlie - exists in left database only'
+    })
+
+    session.left.insert_record('scanner_records', {
+      id: 5,
+      name: 'Eve - exists in left database only'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 2,
+      name: 'Bob - right database version'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 4,
+      name: 'Dave - exists in right database only'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 6,
+      name: 'Fred - exists in right database only'
+    })
+
+    session.left.execute('delete from extender_one_record')
+    session.right.execute('delete from extender_one_record')
+  end
+
+  after(:each) do
+    session = Session.new
+
+    session.left.execute('delete from scanner_records')
+    session.right.execute('delete from scanner_records')
   end
 
   it "should register itself with CommandRunner" do

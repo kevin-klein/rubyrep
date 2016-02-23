@@ -37,14 +37,19 @@ describe ReplicationInitializer do
     session = nil
     begin
       session = Session.new
-      session.left.begin_db_transaction
       initializer = ReplicationInitializer.new(session)
+
+      if session.left.replication_trigger_exists?('rr_trigger_test', 'trigger_test')
+        session.left.drop_replication_trigger('rr_trigger_test', 'trigger_test')
+      end
+
       initializer.create_trigger(:left, 'trigger_test')
 
       session.left.insert_record 'trigger_test', {
         'first_id' => 1,
         'second_id' => 2,
-        'name' => 'bla'
+        'name' => 'bla',
+        'id' => 2
       }
 
       row = session.left.select_one("select * from rr_pending_changes")
@@ -52,14 +57,13 @@ describe ReplicationInitializer do
       row.delete 'change_time'
       row.should == {
         'change_table' => 'trigger_test',
-        'change_key' => 'first_id|1|second_id|2',
+        'change_key' => 'id|2',
         'change_new_key' => nil,
         'change_type' => 'I'
       }
     ensure
-      session.left.execute 'delete from trigger_test' if session
-      session.left.execute 'delete from rr_pending_changes' if session
-      session.left.rollback_db_transaction if session
+      session.left.execute 'delete from trigger_test'
+      session.left.execute 'delete from rr_pending_changes'
     end
   end
 
@@ -71,7 +75,6 @@ describe ReplicationInitializer do
       if initializer.trigger_exists?(:left, 'trigger_test')
         initializer.drop_trigger(:left, 'trigger_test')
       end
-      session.left.begin_db_transaction
 
       initializer.create_trigger :left, 'trigger_test'
       initializer.trigger_exists?(:left, 'trigger_test').
@@ -80,20 +83,19 @@ describe ReplicationInitializer do
       initializer.trigger_exists?(:left, 'trigger_test').
         should be_false
     ensure
-      session.left.rollback_db_transaction if session
     end
   end
 
   it "ensure_sequence_setup should not do anything if :adjust_sequences option is not given" do
     config = deep_copy(Initializer.configuration)
-    config.add_table_options 'sequence_test', :adjust_sequences => false
+    config.add_table_options 'sequence_test', adjust_sequences: false
     session = Session.new(config)
     initializer = ReplicationInitializer.new(session)
 
     session.left.should_not_receive(:update_sequences)
     session.right.should_not_receive(:update_sequences)
 
-    table_pair = {:left => 'sequence_test', :right => 'sequence_test'}
+    table_pair = {left: 'sequence_test', right: 'sequence_test'}
     initializer.ensure_sequence_setup table_pair, 3, 2, 2
   end
 
@@ -102,8 +104,6 @@ describe ReplicationInitializer do
     begin
       session = Session.new
       initializer = ReplicationInitializer.new(session)
-      session.left.begin_db_transaction
-      session.right.begin_db_transaction
 
       session.left.execute "delete from sequence_test"
       session.right.execute "delete from sequence_test"
@@ -112,7 +112,7 @@ describe ReplicationInitializer do
       # Calling ensure_sequence_setup twice with different values to ensure that
       # it is actually does something.
 
-      table_pair = {:left => 'sequence_test', :right => 'sequence_test'}
+      table_pair = {left: 'sequence_test', right: 'sequence_test'}
 
       initializer.ensure_sequence_setup table_pair, 3, 2, 2
       initializer.ensure_sequence_setup table_pair, 5, 2, 1
@@ -121,16 +121,15 @@ describe ReplicationInitializer do
       (id1 % 5).should == 2
     ensure
       [:left, :right].each do |database|
-        initializer.clear_sequence_setup database, 'sequence_test' if session
-        session.send(database).execute "delete from sequence_test" if session
-        session.send(database).rollback_db_transaction if session
+        initializer.clear_sequence_setup database, 'sequence_test'
+        session.send(database).execute "delete from sequence_test"
       end
     end
   end
 
   it "clear_sequence_setup should not do anything if :adjust_sequences option is not given" do
     config = deep_copy(Initializer.configuration)
-    config.add_table_options 'sequence_test', :adjust_sequences => false
+    config.add_table_options 'sequence_test', adjust_sequences: false
     session = Session.new(config)
     initializer = ReplicationInitializer.new(session)
 
@@ -144,18 +143,15 @@ describe ReplicationInitializer do
     begin
       session = Session.new
       initializer = ReplicationInitializer.new(session)
-      session.left.begin_db_transaction
-      session.right.begin_db_transaction
-      table_pair = {:left => 'sequence_test', :right => 'sequence_test'}
+      table_pair = {left: 'sequence_test', right: 'sequence_test'}
       initializer.ensure_sequence_setup table_pair, 5, 2, 2
       initializer.clear_sequence_setup :left, 'sequence_test'
       id1, id2 = get_example_sequence_values(session)
       (id2 - id1).should == 1
     ensure
       [:left, :right].each do |database|
-        initializer.clear_sequence_setup database, 'sequence_test' if session
-        session.send(database).execute "delete from sequence_test" if session
-        session.send(database).rollback_db_transaction if session
+        initializer.clear_sequence_setup database, 'sequence_test'
+        session.send(database).execute "delete from sequence_test"
       end
     end
   end
@@ -388,10 +384,19 @@ describe ReplicationInitializer do
     initializer = ReplicationInitializer.new session
     begin
       ['scanner_left_records_only', 'scanner_records'].each do |table|
+
+        if initializer.trigger_exists?(:left, table)
+          initializer.drop_trigger(:left, table)
+        end
+
+        if initializer.trigger_exists?(:right, table)
+          initializer.drop_trigger(:right, table)
+        end
+
         initializer.create_trigger(:left, table)
         initializer.create_trigger(:right, table)
         initializer.ensure_sequence_setup(
-          {:left => table, :right => table},
+          {left: table, right: table},
           2, 0, 1
         )
         session.right.insert_record table, {'id' => 100, 'name' => 'bla'}
@@ -438,12 +443,12 @@ describe ReplicationInitializer do
     config.include_tables 'rr_pending_changes' # added to verify that it is ignored
 
     # added to verify that a disabled :initial_sync is honored
-    config.add_table_options 'table_with_manual_key', :initial_sync => false
+    config.add_table_options 'table_with_manual_key', initial_sync: false
 
     session = Session.new(config)
 
     # dummy data to verify that 'table_with_manual_key' is indeed not synced
-    session.left.insert_record 'table_with_manual_key', :id => 1, :name => 'bla'
+    session.left.insert_record 'table_with_manual_key', id: 1, name: 'bla'
 
     $stdout = StringIO.new
     begin
@@ -453,14 +458,14 @@ describe ReplicationInitializer do
       initializer.prepare_replication
 
       received_session.should == session
-      
+
       # verify sequences have been setup
       session.left.sequence_values('rr','scanner_left_records_only').values[0][:increment].should == 2
       session.right.sequence_values('rr','scanner_left_records_only').values[0][:increment].should == 2
 
       # verify table was synced
-      left_records = session.left.select_all("select * from  scanner_left_records_only order by id")
-      right_records = session.left.select_all("select * from  scanner_left_records_only order by id")
+      left_records = session.left.select_all("select * from  scanner_left_records_only order by id").to_hash
+      right_records = session.left.select_all("select * from  scanner_left_records_only order by id").to_hash
       left_records.should == right_records
 
       # verify rubyrep activity is _not_ logged
@@ -470,13 +475,13 @@ describe ReplicationInitializer do
       initializer.trigger_exists?(:left, 'scanner_left_records_only').should be_true
       session.left.insert_record 'scanner_left_records_only', {'id' => 10, 'name' => 'bla'}
       changes = session.left.select_all("select change_key from rr_pending_changes")
-      changes.size.should == 1
+      changes.count.should == 1
       changes[0]['change_key'].should == 'id|10'
 
       # verify that the 'rr_pending_changes' table was not touched
       initializer.trigger_exists?(:left, 'rr_pending_changes').should be_false
 
-      # verify that :initial_sync => false is honored
+      # verify that initial_sync: false is honored
       session.right.select_all("select * from table_with_manual_key").should be_empty
 
       # verify that syncing is done only for unsynced tables

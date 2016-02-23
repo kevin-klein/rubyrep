@@ -33,6 +33,7 @@ module RR
     # +loaders+ is teh current LoggedChangeLoaders instance
     def initialize(loaders)
       self.loaders = loaders
+      @loaded = false
     end
 
     # Should be set to +true+ if this ReplicationDifference instance was
@@ -75,7 +76,7 @@ module RR
         changes[database] = LoggedChange.new loaders[database]
         change_times[database] = loaders[database].oldest_change_time
       end
-      return if change_times[:left] == nil and change_times[:right] == nil
+      return if change_times[:left] == nil && change_times[:right] == nil
 
       oldest = nil
       [:left, :right].each do |database|

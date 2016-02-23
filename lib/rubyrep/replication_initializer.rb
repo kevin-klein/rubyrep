@@ -32,13 +32,13 @@ module RR
       options = self.options(table)
 
       params = {
-        :trigger_name => "#{options[:rep_prefix]}_#{table}",
-        :table => table,
-        :keys => session.send(database).primary_key_names(table),
-        :log_table => "#{options[:rep_prefix]}_pending_changes",
-        :activity_table => "#{options[:rep_prefix]}_running_flags",
-        :key_sep => options[:key_sep],
-        :exclude_rr_activity => false,
+        trigger_name: "#{options[:rep_prefix]}_#{table}",
+        table: table,
+        keys: session.send(database).primary_key_names(table),
+        log_table: "#{options[:rep_prefix]}_pending_changes",
+        activity_table: "#{options[:rep_prefix]}_running_flags",
+        key_sep: options[:key_sep],
+        exclude_rr_activity: false,
       }
 
       event_filter = options[:event_filter]
@@ -180,10 +180,10 @@ module RR
         session.left.add_column table_name, :change_key, :string
         session.left.add_column table_name, :left_change_type, :string
         session.left.add_column table_name, :right_change_type, :string
-        session.left.add_column table_name, :description, :string, :limit => DESCRIPTION_SIZE
-        session.left.add_column table_name, :long_description, :string, :limit => LONG_DESCRIPTION_SIZE
+        session.left.add_column table_name, :description, :string, limit: DESCRIPTION_SIZE
+        session.left.add_column table_name, :long_description, :string, limit: LONG_DESCRIPTION_SIZE
         session.left.add_column table_name, :event_time, :timestamp
-        session.left.add_column table_name, :diff_dump, :string, :limit => DIFF_DUMP_SIZE
+        session.left.add_column table_name, :diff_dump, :string, limit: DIFF_DUMP_SIZE
         session.left.remove_column table_name, 'id'
         session.left.add_big_primary_key table_name, 'id'
       end
@@ -296,7 +296,7 @@ module RR
     # Checks for tables that have triggers but are not in the list of configured
     # tables. Removes triggers and restores sequences of those tables.
     # * +configured_table_pairs+:
-    #   An array of table pairs (e. g. [{:left => 'xy', :right => 'xy2'}]).
+    #   An array of table pairs (e. g. [{left: 'xy', right: 'xy2'}]).
     def restore_unconfigured_tables(configured_table_pairs = session.configured_table_pairs)
       [:left, :right].each do |database|
         configured_tables = configured_table_pairs.map {|table_pair| table_pair[database]}
@@ -307,7 +307,7 @@ module RR
 
     # Removes triggers and restores sequences of the specified table pairs.
     # * +configured_table_pairs+:
-    #   An array of table pairs (e. g. [{:left => 'xy', :right => 'xy2'}]).
+    #   An array of table pairs (e. g. [{left: 'xy', right: 'xy2'}]).
     def restore_configured_tables(configured_table_pairs = session.configured_table_pairs)
       [:left, :right].each do |database|
         configured_tables = configured_table_pairs.map {|table_pair| table_pair[database]}
@@ -389,7 +389,7 @@ module RR
         puts "Executing initial table syncs"
         runner = SyncRunner.new
         runner.session = session
-        runner.options = {:table_specs => unsynced_table_specs, :heartbeat_file => session.configuration.options[:heartbeat_file]}
+        runner.options = {table_specs: unsynced_table_specs, heartbeat_file: session.configuration.options[:heartbeat_file]}
         runner.execute
       end
 

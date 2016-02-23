@@ -115,10 +115,6 @@ module RR
 
         self.first_changed_at ||= change['change_time']
         self.last_changed_at = change['change_time']
-
-        if change['change_type'] == 'U' and change['change_new_key'] != current_key
-          current_key = change['change_new_key']
-        end
       end
 
       self.type = SHORT_TYPES[current_type]

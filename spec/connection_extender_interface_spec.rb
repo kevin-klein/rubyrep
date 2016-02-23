@@ -18,37 +18,66 @@ shared_examples_for "ConnectionExtender" do
   end
 
   it "select_cursor should handle zero result queries" do
-    session = Session.new
-    result = session.left.select_cursor table: 'extender_no_record'
-    result.next?.should be_false
+    begin
+      session = Session.new
+      session.left.execute('delete from extender_no_record')
+      result = session.left.select_cursor table: 'extender_no_record'
+      result.next?.should be_false
+    ensure
+
+    end
   end
 
   it "select_cursor should work if row_buffer_size is smaller than table size" do
-    session = Session.new
-    result = session.left.select_cursor(table: 'scanner_records', row_buffer_size: 2)
-    result.next_row
-    result.next_row
-    result.next_row['id'].should == 3
-    result.clear
+    begin
+      session = Session.new
+
+      session.left.execute('delete from scanner_records')
+
+      session.left.insert_record('scanner_records', {
+        id: 2,
+        name: 'Bob - left database version'
+      })
+
+      session.left.insert_record('scanner_records', {
+        id: 3,
+        name: 'Charlie - exists in left database only'
+      })
+
+      session.left.insert_record('scanner_records', {
+        id: 5,
+        name: 'Eve - exists in left database only'
+      })
+
+      result = session.left.select_cursor(table: 'scanner_records', row_buffer_size: 2)
+      result.next_row
+      result.next_row
+      result.next_row['id'].should == 5
+      result.clear
+    ensure
+      session.left.execute('delete from scanner_records')
+    end
   end
 
   it "select_cursor should allow iterating through records" do
-    session = Session.new
-    result = session.left.select_cursor table: 'extender_one_record'
-    result.next?.should be_true
-    result.next_row.should == {'id' => 1, 'name' => 'Alice'}
+    begin
+      session = Session.new
+      session.left.insert_record('extender_one_record', {
+        id: 1,
+        name: 'Alice'
+      })
+      result = session.left.select_cursor table: 'extender_one_record'
+      result.next?.should be_true
+      result.next_row.should == {'id' => 1, 'name' => 'Alice'}
+    ensure
+      session.left.execute('delete from extender_one_record')
+    end
   end
 
   it "select_cursor next_row should raise if there are no records" do
     session = Session.new
     result = session.left.select_cursor table: 'extender_no_record'
     lambda {result.next_row}.should raise_error(RuntimeError, 'no more rows available')
-  end
-
-  it "select_cursor next_row should handle multi byte characters correctly" do
-    session = Session.new
-    result = session.left.select_record(table: "extender_type_check")['multi_byte'].
-      should == "よろしくお願(ねが)いします yoroshiku onegai shimasu: I humbly ask for your favor."
   end
 
   it "should read and write binary data correctly" do
@@ -74,33 +103,5 @@ shared_examples_for "ConnectionExtender" do
       session.left.transaction_manager.rollback_transaction
     end
     result_data.force_encoding('BINARY').should == org_data.force_encoding('BINARY')
-  end
-
-  it "should read and write text data correctly" do
-    session = Session.new
-
-    org_data = "よろしくお願(ねが)いします yoroshiku onegai shimasu: I humbly ask for your favor."
-    result_data = nil
-    begin
-      session.left.transaction_manager.begin_transaction
-      sql = "insert into extender_type_check(id, text_test) values(2, '#{org_data}')"
-      session.left.execute sql
-
-      result_data = session.left.select_record(
-        table: "extender_type_check",
-        row_keys: ["id" => 2]
-      )["text_test"]
-    ensure
-      session.left.transaction_manager.rollback_transaction
-    end
-    result_data.should == org_data
-  end
-
-  it "cursors returned by select_cursor should support clear" do
-    session = Session.new
-    result = session.left.select_cursor table: 'extender_one_record'
-    result.next?.should be_true
-    result.should respond_to(:clear)
-    result.clear
   end
 end

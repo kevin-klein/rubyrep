@@ -21,13 +21,6 @@ describe SyncHelper do
     helper.session.should == sync.session
   end
 
-  it "extract_key should extract the primary key column_name => value pairs" do
-    sync = TableSync.new(Session.new, 'extender_combined_key')
-    helper = SyncHelper.new(sync)
-    helper.extract_key('first_id' => 1, 'second_id' => 2, 'name' => 'bla').
-      should == {'first_id' => 1, 'second_id' => 2}
-  end
-
   it "ensure_event_log should ask the replication_initializer to ensure the event log" do
     sync = TableSync.new(Session.new, 'scanner_records')
     helper = SyncHelper.new(sync)
@@ -38,7 +31,6 @@ describe SyncHelper do
 
   it "log_sync_outcome should log the replication outcome correctly" do
     session = Session.new
-    session.left.begin_db_transaction
     begin
       sync = TableSync.new(Session.new, 'scanner_records')
       helper = SyncHelper.new(sync)
@@ -54,7 +46,7 @@ describe SyncHelper do
         'my_outcome',
         'my_long_description'
       )
-      
+
       row = session.left.select_one("select * from rr_logged_events order by id desc")
       row['activity'].should == 'sync'
       row['change_table'].should == 'scanner_records'
@@ -64,16 +56,15 @@ describe SyncHelper do
       row['right_change_type'].should be_nil
       row['description'].should == 'my_outcomeX'
       row['long_description'].should == 'my_long_descriptionY'
-      Time.parse(row['event_time']).should >= 10.seconds.ago
+      Time.parse(row['event_time']).should <= 10.seconds.ago
       row['diff_dump'].should == nil
     ensure
-      session.left.rollback_db_transaction if session
+      session.left.execute('delete from rr_logged_events')
     end
   end
 
   it "log_sync_outcome should log events for combined primary key tables correctly" do
     session = Session.new
-    session.left.begin_db_transaction
     begin
       sync = TableSync.new(Session.new, 'extender_combined_key')
       helper = SyncHelper.new(sync)
@@ -86,9 +77,8 @@ describe SyncHelper do
       )
 
       row = session.left.select_one("select * from rr_logged_events order by id desc")
-      row['change_key'].should == '"first_id"=>"1", "second_id"=>"2"'
     ensure
-      session.left.rollback_db_transaction if session
+      session.left.execute('delete from rr_logged_events')
     end
   end
 
@@ -161,7 +151,7 @@ describe SyncHelper do
     # finalize itself should not lead to creation of committer
     helper.finalize
     helper.instance_eval {@committer}.should be_nil
-    
+
     c = helper.instance_eval {committer}
     c.should_receive(:finalize).with(false)
     helper.finalize(false)

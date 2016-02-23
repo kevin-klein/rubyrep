@@ -62,9 +62,9 @@ module RR
     # * +key+: A column_name => value hash for all primary key columns.
     def load_record(database, table, key)
       cursor = session.send(database).select_cursor(
-        :table => table,
-        :row_keys => [key],
-        :type_cast => true
+        table: table,
+        row_keys: [key],
+        type_cast: true
       )
       row = nil
       row = cursor.next_row if cursor.next?
@@ -97,7 +97,7 @@ module RR
       columns = @table_columns[table]
       type_casted_row = {}
       row.each_pair do |column_name, value|
-        type_casted_row[column_name] = columns[column_name].type_cast(value)
+        type_casted_row[column_name] = columns[column_name]
       end
       type_casted_row
     end
@@ -107,8 +107,6 @@ module RR
     # * +outcome+: string summarizing the outcome of the replication
     # * +details+: string with further details regarding the replication
     def log_replication_outcome(diff, outcome, details = nil)
-      return # ManageIQ does not want to use this table
-
       table = diff.changes[:left].table
       key = diff.changes[:left].key
       if key.size == 1
@@ -121,21 +119,21 @@ module RR
       end
       rep_outcome, rep_details = fit_description_columns(outcome, details)
       diff_dump = diff.to_yaml[0...ReplicationInitializer::DIFF_DUMP_SIZE]
-      
+
       session.left.insert_record "#{options[:rep_prefix]}_logged_events", {
-        :activity => 'replication',
-        :change_table => table,
-        :diff_type => diff.type.to_s,
-        :change_key => key,
-        :left_change_type => (diff.changes[:left] ? diff.changes[:left].type.to_s : nil),
-        :right_change_type => (diff.changes[:right] ? diff.changes[:right].type.to_s : nil),
-        :description => rep_outcome,
-        :long_description => rep_details,
-        :event_time => Time.now,
-        :diff_dump => diff_dump
+        activity: 'replication',
+        change_table: table,
+        diff_type: diff.type.to_s,
+        change_key: key,
+        left_change_type: (diff.changes[:left] ? diff.changes[:left].type.to_s : nil),
+        right_change_type: (diff.changes[:right] ? diff.changes[:right].type.to_s : nil),
+        description: rep_outcome,
+        long_description: rep_details,
+        event_time: Time.now,
+        diff_dump: diff_dump
       }
     end
-    
+
     # Creates a new SyncHelper for the given +TableSync+ instance.
     def initialize(replication_run)
       self.replication_run = replication_run

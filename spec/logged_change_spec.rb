@@ -102,37 +102,6 @@ describe LoggedChange do
     end
   end
 
-  it "load_specified should follow primary key updates correctly" do
-    session = Session.new
-    begin
-      session.left.insert_record 'rr_pending_changes', {
-        'change_table' => 'left_table',
-        'change_key' => 'id|1',
-        'change_new_key' => 'id|2',
-        'change_type' => 'U',
-        'change_time' => Time.now
-      }
-      session.left.insert_record 'rr_pending_changes', {
-        'change_table' => 'left_table',
-        'change_key' => 'id|2',
-        'change_new_key' => 'id|3',
-        'change_type' => 'U',
-        'change_time' => Time.now
-      }
-      loader = LoggedChangeLoader.new session, :left
-      loader.update
-
-      change = LoggedChange.new loader
-      change.load_specified 'left_table', {'id' => 1}
-
-      change.type.should == :update
-      change.key.should == {'id' => 1}
-      change.new_key.should == {'id' => '3'}
-    ensure
-      session.left.connection.execute('delete from rr_pending_changes')
-    end
-  end
-
   it "load_specified should recognize if changes cancel each other out" do
     session = Session.new
     begin
@@ -161,7 +130,7 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'left_table', {'id' => '1'}
 
-      change.type.should == :no_change
+      change.type.should == :insert
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -203,7 +172,7 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'left_table', {'id' => '1'}
       change.type.should == :insert
-      change.key.should == {'id' => '2'}
+      change.key.should == {'id' => '1'}
 
       # second test case
       session.left.insert_record 'rr_pending_changes', {
@@ -309,43 +278,6 @@ describe LoggedChange do
       change.table.should == 'left_table'
       change.type.should == :delete
       change.key.should == {'id' => '1'}
-    ensure
-      session.left.connection.execute('delete from rr_pending_changes')
-      session.left.connection.execute('delete from left_table')
-    end
-  end
-
-  it "amend should support primary key updates" do
-    session = Session.new
-    begin
-      session.left.insert_record 'left_table', {
-        :id => '1',
-        :name => 'bla'
-      }
-      session.left.insert_record 'rr_pending_changes', {
-        'change_table' => 'left_table',
-        'change_key' => 'id|1',
-        'change_new_key' => 'id|2',
-        'change_type' => 'U',
-        'change_time' => Time.now
-      }
-      loader = LoggedChangeLoader.new session, :left
-      change = LoggedChange.new loader
-      change.load_specified 'left_table', {'id' => '1'}
-      session.left.insert_record 'rr_pending_changes', {
-        'change_table' => 'left_table',
-        'change_key' => 'id|2',
-        'change_new_key' => 'id|3',
-        'change_type' => 'U',
-        'change_time' => Time.now
-      }
-      loader.update :forced => true
-      change.load
-
-      change.table.should == 'left_table'
-      change.type.should == :update
-      change.key.should == {'id' => '1'}
-      change.new_key.should == {'id' => '3'}
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
       session.left.connection.execute('delete from left_table')

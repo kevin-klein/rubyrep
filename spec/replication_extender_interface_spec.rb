@@ -16,6 +16,7 @@ shared_examples_for "ReplicationExtender" do
       if session.left.replication_trigger_exists?('rr_trigger_test', 'trigger_test')
         session.left.drop_replication_trigger('rr_trigger_test', 'trigger_test')
       end
+      session.left.execute 'delete from rr_pending_changes'
       params = {
         trigger_name: 'rr_trigger_test',
         table: 'trigger_test',
@@ -48,7 +49,7 @@ shared_examples_for "ReplicationExtender" do
       end
 
       rows.each {|row| row.delete 'id'; row.delete 'change_time'}
-      rows.should == [{"change_table"=>"trigger_test", "change_key"=>"first_id|1|second_id|2", "change_new_key"=>nil, "change_type"=>"D"}, {"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>nil, "change_type"=>"I"}, {"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>"second_id|9", "change_type"=>"U"}]
+      rows.should == [{"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>nil, "change_type"=>"I"}, {"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>"second_id|9", "change_type"=>"U"}]
     ensure
       session.left.execute 'delete from trigger_test' if session
       session.left.execute 'delete from rr_pending_changes' if session

@@ -11,6 +11,48 @@ describe ProxiedTableScan do
     Initializer.configuration.options[:proxy_block_size] = 2
 
     ensure_proxy
+
+    session = Session.new
+
+    session.left.execute('delete from scanner_records')
+    session.right.execute('delete from scanner_records')
+
+    session.left.insert_record('scanner_records', {
+      id: 2,
+      name: 'Bob - left database version'
+    })
+
+    session.left.insert_record('scanner_records', {
+      id: 3,
+      name: 'Charlie - exists in left database only'
+    })
+
+    session.left.insert_record('scanner_records', {
+      id: 5,
+      name: 'Eve - exists in left database only'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 2,
+      name: 'Bob - right database version'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 4,
+      name: 'Dave - exists in right database only'
+    })
+
+    session.right.insert_record('scanner_records', {
+      id: 6,
+      name: 'Fred - exists in right database only'
+    })
+  end
+
+  after(:each) do
+    session = Session.new
+
+    session.left.execute('delete from scanner_records')
+    session.right.execute('delete from scanner_records')
   end
 
   it "initialize should raise exception if session is not proxied" do
@@ -67,7 +109,7 @@ describe ProxiedTableScan do
     end
     # in this scenario the right table has the 'highest' data,
     # so 'right-sided' data are already implicitely tested here
-    diff.should == [[:right, {"id"=>1, "name"=>"Alice - exists in both databases"}], [:right, {"id"=>2, "name"=>"Bob - right database version"}], [:right, {"id"=>4, "name"=>"Dave - exists in right database only"}], [:right, {"id"=>6, "name"=>"Fred - exists in right database only"}]]
+    diff.should == [[:conflict, [{"id"=>2, "name"=>"Bob - left database version"}, {"id"=>2, "name"=>"Bob - right database version"}]], [:left, {"id"=>3, "name"=>"Charlie - exists in left database only"}], [:right, {"id"=>4, "name"=>"Dave - exists in right database only"}], [:left, {"id"=>5, "name"=>"Eve - exists in left database only"}], [:right, {"id"=>6, "name"=>"Fred - exists in right database only"}]]
   end
 
   it "compare_blocks should destroy the created cursors" do
@@ -105,7 +147,7 @@ describe ProxiedTableScan do
     end
     # in this scenario the right table has the 'highest' data,
     # so 'right-sided' data are already implicitely tested here
-    diff.should == [[:right, {"id"=>1, "name"=>"Alice - exists in both databases"}], [:right, {"id"=>2, "name"=>"Bob - right database version"}], [:right, {"id"=>4, "name"=>"Dave - exists in right database only"}], [:right, {"id"=>6, "name"=>"Fred - exists in right database only"}]]
+    diff.should == [[:conflict, [{"id"=>2, "name"=>"Bob - left database version"}, {"id"=>2, "name"=>"Bob - right database version"}]], [:left, {"id"=>3, "name"=>"Charlie - exists in left database only"}], [:right, {"id"=>4, "name"=>"Dave - exists in right database only"}], [:left, {"id"=>5, "name"=>"Eve - exists in left database only"}], [:right, {"id"=>6, "name"=>"Fred - exists in right database only"}]]
   end
 
   it "run should update the progress" do
@@ -116,7 +158,7 @@ describe ProxiedTableScan do
       number_steps += steps
     end
     scan.run {|_, _|}
-    number_steps.should == 4
+    number_steps.should == 6
   end
 
   it "run should update the progress even if there are no records" do

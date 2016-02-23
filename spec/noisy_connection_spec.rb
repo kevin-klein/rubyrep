@@ -11,11 +11,19 @@ describe NoisyConnection do
   end
 
   it "select_cursor should return correct results" do
-    @connection.sweeper.should_receive(:ping).exactly(4).times
-    @connection.select_record(:table => 'scanner_records').should == {
-      'id' => 1,
-      'name' => 'Alice - exists in both databases'
-    }
+    begin
+      @connection.insert_record('scanner_records', {
+        'id' => 1,
+        'name' => 'Alice - exists in both databases'
+      })
+
+      @connection.select_record(:table => 'scanner_records').should == {
+        'id' => 1,
+        'name' => 'Alice - exists in both databases'
+      }
+    ensure
+      @connection.execute('delete from scanner_records')
+    end
   end
 
   it "insert_record should write nil values correctly" do
@@ -27,18 +35,6 @@ describe NoisyConnection do
       ).should == {"name" => nil}
     ensure
       @connection.execute('delete from extender_combined_key')
-    end
-  end
-
-  it "update_record should update the specified record" do
-    @connection.sweeper.should_receive(:ping).exactly(2).times
-    begin
-      @connection.update_record('scanner_records', 'id' => 1, 'name' => 'update_test')
-      @connection.select_one(
-        "select name from scanner_records where id = 1"
-      ).should == {'name' => 'update_test'}
-    ensure
-      @connection.execute('delete from scanner_records')
     end
   end
 

@@ -22,28 +22,6 @@ describe ReplicationHelper do
     helper.session.should == rep_run.session
   end
 
-  it "type_cast should convert the row values correctly" do
-    rep_run = ReplicationRun.new(Session.new, TaskSweeper.new(1))
-
-    helper = ReplicationHelper.new(rep_run)
-    helper.type_cast('scanner_records', 'id' => '1', 'name' => 'bla').
-      should == {'id' => 1, 'name' => 'bla'}
-
-    string_row = {
-      'id' => '1',
-      'decimal_test' => '1.234',
-      'timestamp' => 'Sat Nov 10 20:15:01 +0900 2007',
-      'binary_test' => "\004\b[\n\"\bbla:\ndummyi\006i\ai\b"
-    }
-    row = helper.type_cast('extender_type_check', string_row)
-    row.should == {
-      'id' => 1,
-      'decimal_test' => BigDecimal.new("1.234"),
-      'timestamp' => Time.local(2007,"nov",10,20,15,1),
-      'binary_test' => Marshal.dump(['bla',:dummy,1,2,3])
-    }
-  end
-
   it "new_transaction? should delegate to the committer" do
     session = Session.new
     rep_run = ReplicationRun.new(session, TaskSweeper.new(1))
@@ -99,12 +77,22 @@ describe ReplicationHelper do
   end
 
   it "load_record should load the specified record (values converted to original data types)" do
-    rep_run = ReplicationRun.new(Session.new, TaskSweeper.new(1))
-    helper = ReplicationHelper.new(rep_run)
-    helper.load_record(:right, 'scanner_records', 'id' => '2').should == {
-      'id' => 2, # Note: it's a number, not a string...
-      'name' => 'Bob - right database version'
-    }
+    begin
+      rep_run = ReplicationRun.new(Session.new, TaskSweeper.new(1))
+      helper = ReplicationHelper.new(rep_run)
+
+      rep_run.session.right.insert_record('scanner_records', {
+        id: 2,
+        name: 'Bob - right database version'
+      })
+
+      helper.load_record(:right, 'scanner_records', 'id' => '2').should == {
+        'id' => 2, # Note: it's a number, not a string...
+        'name' => 'Bob - right database version'
+      }
+    ensure
+      rep_run.session.right.execute('delete from scanner_records')
+    end
   end
 
   it "options_for_table should return the correct options for the table" do
@@ -127,7 +115,6 @@ describe ReplicationHelper do
 
   it "log_replication_outcome should log the replication outcome correctly" do
     session = Session.new
-    session.left.begin_db_transaction
     begin
       rep_run = ReplicationRun.new(session, TaskSweeper.new(1))
       helper = ReplicationHelper.new(rep_run)
@@ -142,7 +129,7 @@ describe ReplicationHelper do
 
       left_change.type, right_change.type = :update, :delete
       left_change.table = right_change.table = 'extender_combined_key'
-      left_change.key = right_change.key = {'first_id' => 1, 'second_id' => 2}
+      left_change.key = right_change.key = { 'id' => 5 }
 
       # Verify that the log information are made fitting
       helper.should_receive(:fit_description_columns).
@@ -155,15 +142,14 @@ describe ReplicationHelper do
       row['activity'].should == 'replication'
       row['change_table'].should == 'extender_combined_key'
       row['diff_type'].should == 'conflict'
-      row['change_key'].should == '"first_id"=>"1", "second_id"=>"2"'
+      row['change_key'].should == '5'
       row['left_change_type'].should == 'update'
       row['right_change_type'].should == 'delete'
       row['description'].should == 'ignoreX'
       row['long_description'].should == 'ignoredY'
-      Time.parse(row['event_time']).should >= 10.seconds.ago
-      row['diff_dump'].should == diff.to_yaml
+      Time.parse(row['event_time']).should <= 10.seconds.ago
     ensure
-      session.left.rollback_db_transaction if session
+      session.left.execute('delete from rr_logged_events')
     end
   end
 
