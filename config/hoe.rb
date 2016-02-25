@@ -29,18 +29,18 @@ Run 'rubyforge setup' to prepare your env for access to Rubyforge
 end
 
 
-REV = nil 
-# UNCOMMENT IF REQUIRED: 
+REV = nil
+# UNCOMMENT IF REQUIRED:
 # REV = `svn info`.each {|line| if line =~ /^Revision:/ then k,v = line.split(': '); break v.chomp; else next; end} rescue nil
 VERS = RR::VERSION::STRING + (REV ? ".#{REV}" : "")
 
 ENV['RDOCOPT'] = "-S -f html -T hanna"
 
 class Hoe
-  def extra_deps 
-    @extra_deps.reject! { |x| Array(x).first == 'hoe' } 
+  def extra_deps
+    @extra_deps.reject! { |x| Array(x).first == 'hoe' }
     @extra_deps
-  end 
+  end
 end
 
 # Generate all the Rake tasks
@@ -60,9 +60,9 @@ hoe = Hoe.spec(GEM_NAME) do
   #extra_deps = []     # An array of rubygem dependencies [name, version], e.g. [ ['active_support', '>= 1.3.1'] ]
   extra_deps << ['activesupport', '>= 3.0.5']
   extra_deps << ['activerecord' , '>= 3.0.5']
-  
+
   #spec_extras = {}    # A hash of extra values to set in the gemspec.
-  
+
 end
 
 CHANGES = hoe.paragraphs_of('History.txt', 0..1).join("\\n\\n")
