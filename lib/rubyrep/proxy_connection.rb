@@ -255,7 +255,8 @@ module RR
         table_columns[table] = {}
         columns(table).each {|c| table_columns[table][c.name] = c}
       end
-      connection.quote value, table_columns[table][column]
+
+      connection.quote value
     end
 
     # Create a cursor for the given table.

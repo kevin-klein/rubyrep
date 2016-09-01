@@ -178,7 +178,7 @@ module RR
           change_array[change['array_index']] = nil
 
           # delete change from database
-          connection.execute "delete from #{change_log_table} where id = #{change['id']}"
+          result = connection.execute "delete from #{change_log_table} where id = #{change['id']}"
 
           # delete key_changes if empty
           if key_changes.empty?

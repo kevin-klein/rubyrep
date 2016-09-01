@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 $LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
 
@@ -8,4 +8,4 @@ require 'bundler/setup' if File.exist?(ENV['BUNDLE_GEMFILE'])
 
 require 'rubyrep'
 
-exit RR::CommandRunner.run(ARGV)
+RR::CommandRunner.run(ARGV)

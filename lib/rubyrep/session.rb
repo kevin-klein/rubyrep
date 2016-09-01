@@ -195,7 +195,7 @@ module RR
     # database.
     # * +database+: the target database (either :+left+ or :+right+)
     def connect_database(database)
-      if configuration.left == configuration.right and database == :right
+      if configuration.left == configuration.right && database == :right
         # If both database configurations point to the same database
         # then don't create the database connection twice.
         # Assumes that the left database is always connected before the right one.

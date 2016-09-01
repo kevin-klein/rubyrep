@@ -12,7 +12,7 @@ module RR
 
       # Unless overwritten via configuration, transactions are commited after the
       # given number of record changes
-      DEFAULT_COMMIT_FREQUENCY = 1000
+      DEFAULT_COMMIT_FREQUENCY = 5
 
       # Switches the trigger mode of the specified +table+ in the specified
       # +database+ to ignore rubyrep activity.

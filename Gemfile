@@ -1,7 +1,7 @@
 source 'http://rubygems.org'
 
-gem 'activerecord-jdbc-adapter', platform: :jruby
-gem 'jdbc-postgres', platform: :jruby
+gem 'activerecord', '~> 4.2'
+gem 'pg'
 gem 'rake'
 gem 'hoe'
 

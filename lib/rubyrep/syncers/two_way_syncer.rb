@@ -42,7 +42,7 @@ module RR
     #     sync_helper.delete(type, row) if type == :left
     #   end
     class TwoWaySyncer
-      
+
       # Register the syncer
       Syncers.register :two_way => self
 
@@ -75,7 +75,7 @@ module RR
       # Raises an ArgumentError if option is invalid
       def validate_conflict_handling_option(option)
         unless option.respond_to? :call
-          unless [:ignore, :right_wins, :left_wins].include? option
+          unless [:ignore, :right_wins, :left_wins, :later_wins].include? option
             raise ArgumentError.new("#{option.inspect} not a valid :sync_conflict_handling option")
           end
         end
@@ -102,7 +102,7 @@ module RR
         validate_left_right_record_handling_option sync_helper.sync_options[:right_record_handling]
         validate_conflict_handling_option sync_helper.sync_options[:sync_conflict_handling]
         validate_logging_options sync_helper.sync_options[:logged_sync_events]
-        
+
         self.sync_helper = sync_helper
       end
 

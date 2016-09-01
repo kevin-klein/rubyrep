@@ -53,7 +53,7 @@ module RR
     #     end
     #   end
     class TwoWayReplicator
-      
+
       # Register the syncer
       Replicators.register :two_way => self
 
@@ -104,7 +104,7 @@ module RR
         rep_helper.session.configuration.each_matching_option(:replication_conflict_handling) do |table_spec, value|
           unless value.respond_to? :call
             verify_option table_spec,
-              [:ignore, :left_wins, :right_wins, :later_wins, :earlier_wins],
+              [:ignore, :left_wins, :right_wins, :later_wins, :earlier_wins, :later_wins],
               :replication_conflict_handling, value
           end
         end
@@ -215,6 +215,7 @@ module RR
         target_table = rep_helper.corresponding_table(source_db, source_table)
 
         values = rep_helper.load_record source_db, source_table, source_key
+        # puts values
         if values == nil
           diff.amend
           replicate_difference diff, remaining_attempts - 1, "source record for insert vanished"
@@ -355,7 +356,7 @@ module RR
           end
         end
       end
-      
+
     end
   end
 end

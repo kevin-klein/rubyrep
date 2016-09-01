@@ -6,13 +6,13 @@ module RR
     # Delegate the uninteresting methods to the original cursor
     def next?; org_cursor.next? end
     def clear; org_cursor.clear end
-    
+
     # The original cursor object
     attr_accessor :org_cursor
-    
+
     # A column_name => Column cache
     attr_accessor :columns
-    
+
     # Creates a new TypeCastingCursor based on provided database connection and table name
     # for the provided database query cursor
     def initialize(connection, table, cursor)
@@ -20,12 +20,12 @@ module RR
       self.columns = {}
       connection.columns(table).each {|c| columns[c.name] = c}
     end
-    
+
     # Reads the next row from the original cursor and returns the row with the type casted row values.
     def next_row
       row = org_cursor.next_row
-      row.each {|column, value| row[column] = columns[column].type_cast_from_database value}
+      # row.each {|column, value| row[column] = columns[column].type_cast_from_database value}
       row
-    end    
+    end
   end
 end
