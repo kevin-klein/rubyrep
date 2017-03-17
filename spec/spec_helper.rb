@@ -17,9 +17,11 @@ $LOAD_PATH.unshift File.dirname(__FILE__)
 require 'rubyrep'
 require 'connection_extender_interface_spec'
 
+ActiveRecord::Base.logger = Logger.new('/dev/null')
+
 unless self.class.const_defined?('STRANGE_TABLE')
   if ENV['RR_TEST_DB'] == 'postgres' || ENV['RR_TEST_DB'] == nil
-    STRANGE_TABLE = 'table_with.stränge Name山'
+    STRANGE_TABLE = 'table_with_stränge_Name山'
   else
     STRANGE_TABLE = 'table_with_stränge Name山'
   end

@@ -53,7 +53,7 @@ EOS
 
         opts.on("--verbose", "Show errors with full stack trace") do
           options[:verbose] = true
-          ActiveRecord::Base.logger = Logger.new(STDOUT)
+          # ActiveRecord::Base.logger = Logger.new(STDOUT)
         end
 
         opts.on("-v", "--version", "Show version information.") do
@@ -100,7 +100,8 @@ EOS
               run(['--help'])
               status = 0
             elsif commands.include?(command)
-              puts commands[command][:command]
+              # puts 'command'
+              # puts commands[command][:command]
               status = commands[command][:command].run(args.slice(1, 1_000_000))
             else
               $stderr.puts "Error: Unknown command specified.\n\n"
@@ -110,7 +111,6 @@ EOS
           end
         end
       rescue Exception => e
-        raise e
         $stderr.puts "Exception caught: #{e}"
         $stderr.puts e.backtrace if options && options[:verbose]
         status = 1

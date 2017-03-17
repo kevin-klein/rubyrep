@@ -31,6 +31,16 @@ module RR
       @loaders ||= LoggedChangeLoaders.new(session)
     end
 
+    # Creates a new ReplicationRun instance.
+    # * +session+: the current Session
+    # * +sweeper+: the current TaskSweeper
+    def initialize(session, sweeper)
+      @diffs = []
+      self.session = session
+      self.sweeper = sweeper
+      install_sweeper
+    end
+
     # Calls the event filter for the give  difference.
     # * +diff+: instance of ReplicationDifference
     # Returns +true+ if replication of the difference should *not* proceed.
@@ -46,18 +56,6 @@ module RR
       else
         false
       end
-    end
-
-    # Returns the next available ReplicationDifference.
-    # (Either new unprocessed differences or if not available, the first available 'second chancer'.)
-    #
-    def load_difference
-      diff = ReplicationDifference.new loaders
-      diff.load
-      unless diff.loaded? or second_chancers.empty?
-        diff = second_chancers.shift
-      end
-      diff
     end
 
     # Executes the replication run.
@@ -95,37 +93,46 @@ module RR
           update_result = loaders.update
           break unless update_result.any? { |f| f } # ensure the cache of change log records is up-to-date
 
+          break_outer = false
           loop do
-            begin
-              diff = load_difference
-              break unless diff.loaded?
-              break_on_terminate = sweeper.terminated? || $rubyrep_shutdown
-              break if break_on_terminate
-              if diff.type != :no_diff and not event_filtered?(diff)  # Should probably be :no_change, :no_diff doesn't exist
-                replicator.replicate_difference diff
-              end
-            rescue Exception => e
-              if e.message =~ /violates foreign key constraint|foreign key constraint fails/i and !diff.second_chance?
-                # Note:
-                # Identifying the foreign key constraint violation via regular expression is
-                # database dependent and *dirty*.
-                # It would be better to use the ActiveRecord #translate_exception mechanism.
-                # However as per version 3.0.5 this doesn't work yet properly.
+            break if break_outer
+            session.left.transaction do
+              session.right.transaction do
+                diffs = load_all_differences
+                diffs.each do |diff|
+                  begin
+                    break_outer = true
+                    break unless diff.loaded?
+                    break_on_terminate = sweeper.terminated? || $rubyrep_shutdown
+                    break if break_on_terminate
+                    if diff.type != :no_diff and not event_filtered?(diff)  # Should probably be :no_change, :no_diff doesn't exist
+                      replicator.replicate_difference(diff)
+                    end
+                  rescue Exception => e
+                    if e.message =~ /violates foreign key constraint|foreign key constraint fails/i and !diff.second_chance?
+                      # Note:
+                      # Identifying the foreign key constraint violation via regular expression is
+                      # database dependent and *dirty*.
+                      # It would be better to use the ActiveRecord #translate_exception mechanism.
+                      # However as per version 3.0.5 this doesn't work yet properly.
 
-                diff.second_chance = true
-                second_chancers << diff
-              else
-                begin
-                  helper.log_replication_outcome diff, e.message, e.class.to_s + "\n" + e.backtrace.join("\n")
-                rescue Exception => _
-                  # if logging to database itself fails, re-raise the original exception
-                  raise e
+                      diff.second_chance = true
+                      second_chancers << diff
+                    else
+                      begin
+                        helper.log_replication_outcome diff, e.message, e.class.to_s + "\n" + e.backtrace.join("\n")
+                      rescue Exception => _
+                        # if logging to database itself fails, re-raise the original exception
+                        raise e
+                      end
+                    end
+                  end
                 end
               end
             end
-
-            break if break_on_terminate
           end
+
+          break if break_on_terminate
         end
         success = true
       ensure
@@ -138,6 +145,30 @@ module RR
       end
     end
 
+    private
+
+    # Returns the next available ReplicationDifference.
+    # (Either new unprocessed differences or if not available, the first available 'second chancer'.)
+    #
+    def load_difference
+      diff = ReplicationDifference.new(loaders)
+      diff.load
+      unless diff.loaded? || second_chancers.empty?
+        diff = second_chancers.shift
+      end
+      diff
+    end
+
+    def load_all_differences
+      diffs = []
+      loop do
+        diff = load_difference
+        diffs << diff
+        break unless diff.loaded?
+      end
+      diffs
+    end
+
     # Installs the current sweeper into the database connections
     def install_sweeper
       [:left, :right].each do |database|
@@ -146,15 +177,6 @@ module RR
         end
         session.send(database).sweeper = sweeper
       end
-    end
-
-    # Creates a new ReplicationRun instance.
-    # * +session+: the current Session
-    # * +sweeper+: the current TaskSweeper
-    def initialize(session, sweeper)
-      self.session = session
-      self.sweeper = sweeper
-      install_sweeper
     end
   end
 end

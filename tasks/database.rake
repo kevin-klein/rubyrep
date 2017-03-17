@@ -340,7 +340,7 @@ def drop_sample_schema(config)
     drop_table :referencing_table rescue nil
     drop_table :referenced_table rescue nil
     drop_table :referenced_table2 rescue nil
-    drop_table :table_with_manual_key
+    drop_table :table_with_manual_key rescue nil
     drop_table :rr_pending_changes rescue nil
     drop_table :rr_logged_events rescue nil
     drop_table :rr_running_flags rescue nil

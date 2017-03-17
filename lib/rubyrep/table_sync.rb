@@ -1,5 +1,5 @@
 module RR
-  
+
   # Synchronizes the data of two tables.
   class TableSync < TableScan
 
@@ -10,7 +10,7 @@ module RR
     def sync_options
       @sync_options ||= session.configuration.options_for_table(left_table)
     end
-    
+
     # Creates a new TableSync instance
     #   * session: a Session object representing the current database session
     #   * left_table: name of the table in the left database
@@ -69,7 +69,7 @@ module RR
 
       self.helper = SyncHelper.new(self)
       syncer = Syncers.configured_syncer(sync_options).new(helper)
-    
+
       execute_sync_hook :before_table_sync
       self.helper.log_table_sync_started(left_table)
 
@@ -87,6 +87,6 @@ module RR
     ensure
       helper.finalize success if helper
     end
-    
+
   end
 end

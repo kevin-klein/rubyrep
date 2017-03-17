@@ -123,25 +123,13 @@ module RR
       def self.current_session=(session)
         @@current_session = session
       end
-
-      # Rolls back transactions of current session (if there is one).
-      # This would be called e. g. in rspec's after(:each) to ensure that
-      # the next test case finds the original test data.
-      def self.rollback_current_session
-        if self.current_session
-          self.current_session.left.transaction_manager.rollback_transaction
-          self.current_session.right.transaction_manager.rollback_transaction
-          self.current_session = nil
-        end
-      end
-
+      
       # Refer to DefaultCommitter#initialize for details.
       # Starts new transactions on left and right database connectin of session.
       # Additionally rolls back transactions started in previous
       # +NeverCommitter+ instances.
       def initialize(session)
         super
-        self.class.rollback_current_session
         self.class.current_session = session
       end
     end

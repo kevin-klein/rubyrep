@@ -13,7 +13,7 @@ module RR
     def summary_description
       "Scans for differences of the specified tables between both databases."
     end
-    
+
     # Creates the correct scan class.
     # Parameters as defined under BaseRunner#create_processor
     def create_processor(left_table, right_table)
@@ -21,5 +21,3 @@ module RR
     end
   end
 end
-
-

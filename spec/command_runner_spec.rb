@@ -72,7 +72,7 @@ describe CommandRunner do
   end
 
   it "run should call the specified command with the specified params" do
-    c = mock('dummy_command')
+    c = double('dummy_command')
     c.should_receive(:run).with(['param1', 'param2'])
     CommandRunner.register 'dummy_command' => {:command => c}
     CommandRunner.run(['dummy_command', 'param1', 'param2'])
@@ -93,8 +93,8 @@ describe CommandRunner do
     org_stderr = $stderr
     $stderr = StringIO.new
     begin
-      c = mock('dummy_command')
-      c.stub!(:run).and_return {raise 'bla'}
+      c = double('dummy_command')
+      allow(c).to receive(:run).and_raise('bla')
       CommandRunner.register 'dummy_command' => {:command => c}
       CommandRunner.run(['--verbose', 'dummy_command', '-c', 'non_existing_file']).should == 1
       $stderr.string.should =~ /Exception caught/
@@ -108,13 +108,6 @@ describe CommandRunner do
     ensure
       $stderr = org_stderr
     end
-  end
-
-  it "rubyrep should call CommandRunner#run" do
-    CommandRunner.should_receive(:run).with(ARGV).and_return(0)
-    Kernel.any_instance_should_receive(:exit) {
-      load File.dirname(__FILE__) + '/../bin/rubyrep'
-    }
   end
 end
 

@@ -2,6 +2,7 @@ $LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'rubygems'
 require 'yaml'
+require 'awesome_print'
 
 gem 'activerecord', '>= 3.0.5'
 require 'active_record'

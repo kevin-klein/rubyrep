@@ -6,8 +6,8 @@ module RR
     # Provides various JDBC specific functionality required by Rubyrep.
     module JdbcSQLExtender
       RR::ConnectionExtenders.register :jdbc => self
-      
-      # Monkey patch for activerecord-jdbc-adapter-0.7.2 as it doesn't set the 
+
+      # Monkey patch for activerecord-jdbc-adapter-0.7.2 as it doesn't set the
       # +@active+ flag to false, thus ActiveRecord#active? incorrectly confirms
       # the connection to still be active.
       def disconnect!
@@ -22,7 +22,7 @@ module RR
           raise "table '#{table}' does not exist"
         end
         columns = []
-        result_set = @connection.connection.getMetaData.getPrimaryKeys(nil, nil, table);
+        result_set = @connection.connection.getMetaData.getPrimaryKeys(nil, nil, table)
         while result_set.next
           column_name = result_set.getString("COLUMN_NAME")
           key_seq = result_set.getShort("KEY_SEQ")
