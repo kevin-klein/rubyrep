@@ -8,3 +8,5 @@ tmp/*
 *.conf
 vendor/
 *.bat
+config/tb_config.rb
+

@@ -39,6 +39,9 @@ module RR
       self.session = session
       self.sweeper = sweeper
       install_sweeper
+
+      PendingChangesActor.supervise(as: :pending_changes, args: [session])
+      HeartbeatActor.supervise(as: :heartbeat, args: [session])
     end
 
     # Calls the event filter for the give  difference.
@@ -60,21 +63,11 @@ module RR
 
     # Executes the replication run.
     def run
-      $stdout.write "-" if session.configuration.options[:replication_trace]
+      # ap Celluloid[:heartbeat]
+      Celluloid[:heartbeat].cast(:trigger_heartbeat)
 
-      RR.heartbeat(session.configuration.options[:heartbeat_file])
-
-      return unless [:left, :right].any? do |database|
-        next false if session.configuration.send(database)[:mode] == :slave
-        changes_pending = false
-        t = Thread.new do
-          changes_pending = session.send(database).select_one(
-            "select id from #{session.configuration.options[:rep_prefix]}_pending_changes limit 1"
-          ) != nil
-        end
-        t.join session.configuration.options[:database_connection_timeout]
-        changes_pending
-      end
+      has_changes_future = TRegistry[:pending_changes].future.has_changes?
+      return unless has_changes_future.value
 
       # Apparently sometimes above check for changes takes already so long, that
       # the replication run times out.
@@ -87,8 +80,7 @@ module RR
         break_on_terminate = false
 
         loop do
-          $stdout.write "." if session.configuration.options[:replication_trace]
-          RR.heartbeat(session.configuration.options[:heartbeat_file])
+          TRegistry[:heartbeat].cast(:trigger_heartbeat)
 
           update_result = loaders.update
           break unless update_result.any? { |f| f } # ensure the cache of change log records is up-to-date

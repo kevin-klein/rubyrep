@@ -5,8 +5,10 @@ module RR
   # Each Replicator must register itself with Replicators#register.
   # Each Replicator must implement the following methods:
   #
-  #   # Creates a new replicator (A replicator is used for one replication run only)
-  #   #   * sync_helper: a SyncHelper object providing necessary information and functionalities
+  #   # Creates a new replicator
+  #   #   (A replicator is used for one replication run only)
+  #   #   * sync_helper: a SyncHelper object providing necessary information
+  #   #     and functionalities
   #   def initialize(sync_helper)
   #
   #   # Called to sync the provided difference.
@@ -37,6 +39,5 @@ module RR
       @replicators ||= {}
       @replicators.merge! replicator_hash
     end
-
   end
 end

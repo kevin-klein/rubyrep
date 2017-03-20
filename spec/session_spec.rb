@@ -3,7 +3,7 @@ require 'yaml'
 
 include RR
 
-describe Session do   # here database connection caching is _not_ disabled
+describe Session do # here database connection caching is _not_ disabled
   before(:each) do
     Initializer.configuration = standard_config
   end
@@ -11,14 +11,14 @@ describe Session do   # here database connection caching is _not_ disabled
   after(:each) do
   end
 
-  it "initialize should create (fake) proxy connections as per configuration" do
+  it 'initialize should create (fake) proxy connections as per configuration' do
     dummy_proxy = Object.new
-    dummy_connection = mock("dummy connection")
+    dummy_connection = mock('dummy connection')
     dummy_connection.stub!(:tables).and_return([])
     dummy_connection.stub!(:manual_primary_keys=)
-    dummy_connection.stub!(:select_one).and_return({'x' => '2'})
+    dummy_connection.stub!(:select_one).and_return('x' => '2')
     dummy_proxy.should_receive(:create_session).and_return(dummy_connection)
-    DRbObject.should_receive(:new).with(nil,"druby://localhost:9876").and_return(dummy_proxy)
+    DRbObject.should_receive(:new).with(nil, 'druby://localhost:9876').and_return(dummy_proxy)
 
     session = Session.new proxied_config
 
@@ -29,35 +29,35 @@ describe Session do   # here database connection caching is _not_ disabled
     session.right.should be_an_instance_of(ProxyConnection)
   end
 
-  it "initialize should assign manual primary keys to the proxy connections" do
+  it 'initialize should assign manual primary keys to the proxy connections' do
     config = deep_copy(standard_config)
     config.included_table_specs.clear
-    config.include_tables "table_with_manual_key, extender_without_key", :primary_key_names => ['id']
+    config.include_tables 'table_with_manual_key, extender_without_key', primary_key_names: ['id']
     session = Session.new config
-    session.left.manual_primary_keys.should == {'table_with_manual_key'=>['id']}
-    session.right.manual_primary_keys.should == {'extender_without_key'=>['id']}
+    session.left.manual_primary_keys.should == { 'table_with_manual_key' => ['id'] }
+    session.right.manual_primary_keys.should == { 'extender_without_key' => ['id'] }
   end
 
-  it "refresh should raise error even if database connect fails silently" do
+  it 'refresh should raise error even if database connect fails silently' do
     session = Session.new
     session.right.destroy
     session.right.connection.should_not be_active
     session.should_receive(:connect_database)
-    lambda {session.refresh}.should raise_error(/no connection to.*right.*database/)
+    -> { session.refresh }.should raise_error(/no connection to.*right.*database/)
   end
 
-  it "refresh should work with proxied database connections" do
+  it 'refresh should work with proxied database connections' do
     ensure_proxy
     session = Session.new(proxied_config)
     session.right.destroy
     session.right.connection.should_not be_active
-    lambda {session.right.select_one("select 1+1 as x")}.should raise_error
+    -> { session.right.select_one('select 1+1 as x') }.should raise_error
     session.refresh
     session.right.connection.should be_active
-    session.right.select_one("select 1+1 as x")['x'].to_i.should == 2
+    session.right.select_one('select 1+1 as x')['x'].to_i.should == 2
   end
 
-  it "disconnect_databases should disconnect both databases" do
+  it 'disconnect_databases should disconnect both databases' do
     session = Session.new(standard_config)
     session.left.connection.should be_active
     old_right_connection = session.right.connection
@@ -68,42 +68,42 @@ describe Session do   # here database connection caching is _not_ disabled
     old_right_connection.should_not be_active
   end
 
-  it "refresh should not do anyting if the connection is still active" do
+  it 'refresh should not do anyting if the connection is still active' do
     session = Session.new
     old_connection_id = session.right.connection.object_id
     session.refresh
     session.right.connection.object_id.should == old_connection_id
   end
 
-  it "refresh should replace active connections if forced is true" do
+  it 'refresh should replace active connections if forced is true' do
     session = Session.new
     old_connection_id = session.right.connection.object_id
-    session.refresh :forced => true
+    session.refresh forced: true
     session.right.connection.object_id.should_not == old_connection_id
   end
 
-  it "manual_primary_keys should return the specified manual primary keys" do
+  it 'manual_primary_keys should return the specified manual primary keys' do
     config = deep_copy(standard_config)
     config.included_table_specs.clear
-    config.include_tables "table_with_manual_key, extender_without_key", :key => ['id']
+    config.include_tables 'table_with_manual_key, extender_without_key', key: ['id']
     session = Session.new config
-    session.manual_primary_keys(:left).should == {'table_with_manual_key'=>['id']}
-    session.manual_primary_keys(:right).should == {'extender_without_key'=>['id']}
+    session.manual_primary_keys(:left).should == { 'table_with_manual_key' => ['id'] }
+    session.manual_primary_keys(:right).should == { 'extender_without_key' => ['id'] }
   end
 
-  it "manual_primary_keys should accept keys that are not packed into an array" do
+  it 'manual_primary_keys should accept keys that are not packed into an array' do
     config = deep_copy(standard_config)
     config.included_table_specs.clear
-    config.include_tables "table_with_manual_key", :key => 'id'
+    config.include_tables 'table_with_manual_key', key: 'id'
     session = Session.new config
-    session.manual_primary_keys(:left).should == {'table_with_manual_key'=>['id']}
+    session.manual_primary_keys(:left).should == { 'table_with_manual_key' => ['id'] }
   end
 
-  it "corresponding_table should return the correct corresponding table" do
+  it 'corresponding_table should return the correct corresponding table' do
     config = deep_copy(standard_config)
     config.included_table_specs.clear
-    config.include_tables "/scanner/"
-    config.include_tables "table_with_manual_key, extender_without_key"
+    config.include_tables '/scanner/'
+    config.include_tables 'table_with_manual_key, extender_without_key'
     session = Session.new config
 
     session.corresponding_table(:left, 'scanner_records').should == 'scanner_records'
@@ -112,52 +112,47 @@ describe Session do   # here database connection caching is _not_ disabled
     session.corresponding_table(:right, 'extender_without_key').should == 'table_with_manual_key'
   end
 
-  it "corresponding_table should return the given table if no corresponding table can be found" do
+  it 'corresponding_table should return the given table if no corresponding table can be found' do
     session = Session.new
     session.corresponding_table(:left, 'not_existing_table').should == 'not_existing_table'
   end
 
-  it "configured_table_pairs should return the table pairs as per included_table_specs parameter" do
+  it 'configured_table_pairs should return the table pairs as per included_table_specs parameter' do
     session = Session.new
     session.configured_table_pairs(['scanner_records']).should == [
-      {:left => 'scanner_records', :right => 'scanner_records'},
+      { left: 'scanner_records', right: 'scanner_records' }
     ]
   end
 
-  it "configured_table_pairs should return the table pairs as per configuration if included_table_specs paramter is an empty array" do
-    session = Session.new
-    session.configured_table_pairs([]).should ==[{:left=>"table_with_manual_key", :right=>"table_with_manual_key"}, {:left=>"scanner_left_records_only", :right=>"scanner_left_records_only"}]
-  end
-
   def convert_table_array_to_table_pair_array(tables)
-    tables.map {|table| {:left => table, :right => table}}
+    tables.map { |table| { left: table, right: table } }
   end
 
-  it "sort_table_pairs should sort the tables correctly" do
-    table_pairs = convert_table_array_to_table_pair_array([
-        'scanner_records',
-        'referencing_table',
-        'referenced_table',
-        'scanner_text_key',
-      ])
+  it 'sort_table_pairs should sort the tables correctly' do
+    table_pairs = convert_table_array_to_table_pair_array(%w(
+                                                            scanner_records
+                                                            referencing_table
+                                                            referenced_table
+                                                            scanner_text_key
+                                                          ))
     sorted_table_pairs = Session.new.sort_table_pairs(table_pairs)
 
     # ensure result holds the original table pairs
-    p = Proc.new {|l, r| l[:left] <=> r[:left]}
+    p = proc { |l, r| l[:left] <=> r[:left] }
     sorted_table_pairs.sort(&p).should == table_pairs.sort(&p)
 
     # make sure the referenced table comes before the referencing table
-    sorted_table_pairs.map {|table_pair| table_pair[:left]}.grep(/referenc/).
-      should == ['referenced_table', 'referencing_table']
+    sorted_table_pairs.map { |table_pair| table_pair[:left] }.grep(/referenc/)
+                      .should == %w(referenced_table referencing_table)
   end
 
-  it "sort_table_pairs should not sort the tables if table_ordering is not enabled in the configuration" do
-    table_pairs = convert_table_array_to_table_pair_array([
-        'scanner_records',
-        'referencing_table',
-        'referenced_table',
-        'scanner_text_key',
-      ])
+  it 'sort_table_pairs should not sort the tables if table_ordering is not enabled in the configuration' do
+    table_pairs = convert_table_array_to_table_pair_array(%w(
+                                                            scanner_records
+                                                            referencing_table
+                                                            referenced_table
+                                                            scanner_text_key
+                                                          ))
     config = deep_copy(standard_config)
     config.options[:table_ordering] = false
     session = Session.new config

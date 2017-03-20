@@ -3,10 +3,8 @@ $LOAD_PATH.unshift File.dirname(__FILE__) + '/..'
 require 'rubyrep'
 
 module RR
-
   # Ensures all preconditions are met to start with replication
   class ReplicationInitializer
-
     # The active Session
     attr_accessor :session
 
@@ -38,7 +36,7 @@ module RR
         log_table: "#{options[:rep_prefix]}_pending_changes",
         activity_table: "#{options[:rep_prefix]}_running_flags",
         key_sep: options[:key_sep],
-        exclude_rr_activity: false,
+        exclude_rr_activity: false
       }
 
       event_filter = options[:event_filter]
@@ -108,7 +106,8 @@ module RR
     # * +table_name+: name of the table
     def sync_complete?(database, table)
       row = session.send(database).select_one(
-        "select state from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'")
+        "select state from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'"
+      )
       row && row['state'] == 'complete'
     end
 
@@ -158,9 +157,9 @@ module RR
     # * +database+: either :+left+ or :+right+
     def silence_ddl_notices(database)
       if session.configuration.send(database)[:adapter] =~ /postgres/
-        old_message_level = session.send(database).
-          select_one("show client_min_messages")['client_min_messages']
-        session.send(database).execute "set client_min_messages = warning"
+        old_message_level = session.send(database)
+                                   .select_one('show client_min_messages')['client_min_messages']
+        session.send(database).execute 'set client_min_messages = warning'
       end
       yield
     ensure
@@ -231,12 +230,11 @@ module RR
       table_name = "#{options[:rep_prefix]}_running_flags"
       [:left, :right].each do |database|
         connection = session.send(database)
-        unless connection.tables.include? table_name
-          silence_ddl_notices(database) do
-            connection.create_table table_name
-            connection.add_column table_name, :active, :integer
-            connection.remove_column table_name, 'id'
-          end
+        next if connection.tables.include? table_name
+        silence_ddl_notices(database) do
+          connection.create_table table_name
+          connection.add_column table_name, :active, :integer
+          connection.remove_column table_name, 'id'
         end
       end
     end
@@ -299,7 +297,7 @@ module RR
     #   An array of table pairs (e. g. [{left: 'xy', right: 'xy2'}]).
     def restore_unconfigured_tables(configured_table_pairs = session.configured_table_pairs)
       [:left, :right].each do |database|
-        configured_tables = configured_table_pairs.map {|table_pair| table_pair[database]}
+        configured_tables = configured_table_pairs.map { |table_pair| table_pair[database] }
         unconfigured_tables = session.send(database).tables - configured_tables
         restore_specified_tables(database, unconfigured_tables)
       end
@@ -310,7 +308,7 @@ module RR
     #   An array of table pairs (e. g. [{left: 'xy', right: 'xy2'}]).
     def restore_configured_tables(configured_table_pairs = session.configured_table_pairs)
       [:left, :right].each do |database|
-        configured_tables = configured_table_pairs.map {|table_pair| table_pair[database]}
+        configured_tables = configured_table_pairs.map { |table_pair| table_pair[database] }
         restore_specified_tables(database, configured_tables)
       end
     end
@@ -320,12 +318,14 @@ module RR
         if trigger_exists?(database, table)
           drop_trigger(database, table)
           session.send(database).execute(
-            "delete from #{options[:rep_prefix]}_pending_changes where change_table = '#{table}'")
+            "delete from #{options[:rep_prefix]}_pending_changes where change_table = '#{table}'"
+          )
         end
 
         if database == :left && sync_state_exists?
           session.left.execute(
-            "delete from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'")
+            "delete from #{options[:rep_prefix]}_sync_state where table_name = '#{table}'"
+          )
         end
 
         clear_sequence_setup(database, table)
@@ -343,38 +343,36 @@ module RR
     def prepare_replication
       exclude_rubyrep_tables
 
-      puts "Verifying RubyRep tables"
+      puts 'Verifying RubyRep tables'
       ensure_infrastructure
 
       call_after_infrastructure_setup_handler
 
-      puts "Checking for and removing rubyrep triggers from unconfigured tables"
+      puts 'Checking for and removing rubyrep triggers from unconfigured tables'
       restore_unconfigured_tables
 
-      puts "Verifying rubyrep triggers of configured tables"
+      puts 'Verifying rubyrep triggers of configured tables'
       unsynced_table_pairs = []
       table_pairs = session.sort_table_pairs(session.configured_table_pairs)
       table_pairs.each do |table_pair|
         table_options = options(table_pair[:left])
         ensure_sequence_setup table_pair,
-          table_options[:sequence_increment],
-          table_options[:left_sequence_offset],
-          table_options[:right_sequence_offset]
+                              table_options[:sequence_increment],
+                              table_options[:left_sequence_offset],
+                              table_options[:right_sequence_offset]
 
         unsynced = false
         [:left, :right].each do |database|
           next if session.configuration.send(database)[:mode] == :slave
-          if !trigger_exists? database, table_pair[database]
+          unless trigger_exists? database, table_pair[database]
             create_trigger database, table_pair[database]
             unsynced = true
           end
         end
 
-        if !sync_complete? :left, table_pair[:left]
-          unsynced = true
-        end
+        unsynced = true unless sync_complete? :left, table_pair[:left]
 
-        if unsynced and table_options[:initial_sync]
+        if unsynced && table_options[:initial_sync]
           unsynced_table_pairs << table_pair
         end
       end
@@ -386,15 +384,14 @@ module RR
       RR.heartbeat(session.configuration.options[:heartbeat_file])
 
       unless session.configuration.options[:no_sync] || unsynced_table_specs.empty?
-        puts "Executing initial table syncs"
+        puts 'Executing initial table syncs'
         runner = SyncRunner.new
         runner.session = session
-        runner.options = {table_specs: unsynced_table_specs, heartbeat_file: session.configuration.options[:heartbeat_file]}
+        runner.options = { table_specs: unsynced_table_specs, heartbeat_file: session.configuration.options[:heartbeat_file] }
         runner.execute
       end
 
-      puts "Starting replication"
+      puts 'Starting replication'
     end
   end
-
 end

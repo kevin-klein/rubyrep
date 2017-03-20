@@ -81,7 +81,7 @@ describe ProxyConnection do
       })
 
       cursor.should be_an_instance_of(ProxyRowCursor)
-      cursor.next_row_keys_and_checksum[0].should == {'id' => 2} # verify that 'from' range was used
+      cursor.next_row_keys_and_checksum[0].should == {'id' => '2'} # verify that 'from' range was used
       cursor.next?.should be false # verify that 'to' range was used
     ensure
       @connection.execute('delete from scanner_records')
@@ -212,8 +212,8 @@ describe ProxyConnection do
       @connection.insert_record('scanner_records', 'id' => 9, 'name' => 'bla')
       @connection.select_record(
         :table => 'scanner_records',
-        :row_keys => ['id' => 9]
-      ).should == {'id' => 9, 'name' => 'bla'}
+        :row_keys => ['id' => '9']
+      ).should == {'id' => '9', 'name' => 'bla'}
     ensure
       @connection.execute('delete from scanner_records')
     end
@@ -225,33 +225,9 @@ describe ProxyConnection do
       @connection.select_record(
         :table => 'extender_combined_key',
         :row_keys => ['id' => 100]
-      ).should == { 'id' => 100, 'first_id' => 8, 'second_id' => 9, "name" => nil}
+      ).should == { 'id' => '100', 'first_id' => '8', 'second_id' => '9', "name" => nil}
     ensure
       @connection.execute('delete from extender_combined_key')
-    end
-  end
-
-  it "insert_record should also insert uncommon data types correctly" do
-    begin
-      test_data = {
-        'id' => 2,
-        'decimal_test' => 1.234,
-        'timestamp' => Time.local(2008,"jun",9,20,15,1),
-        'multi_byte' => "よろしくお願(ねが)いします yoroshiku onegai shimasu: I humbly ask for your favor.",
-        'binary_test' => Marshal.dump(['bla',:dummy,1,2,3]),
-        'text_test' => 'dummy text'
-      }
-      @connection.insert_record('extender_type_check', test_data)
-
-      cursor = @connection.select_cursor(
-        :table => 'extender_type_check',
-        :row_keys => [{'id' => 2}],
-        :type_cast => true
-      )
-      result_data = cursor.next_row
-      result_data.should == test_data
-    ensure
-      @connection.execute('delete from extender_type_check')
     end
   end
 

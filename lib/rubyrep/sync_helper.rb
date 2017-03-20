@@ -1,29 +1,33 @@
 module RR
-
   # Provides helper functionality for the table syncers.
   # The methods exposed by this class are intended to provide a stable interface
   # for third party syncers.
   class SyncHelper
-
     include LogHelper
 
     # The current +TableSync+ instance
     attr_accessor :table_sync
 
     # The active +Session+
-    def session; table_sync.session; end
+    def session
+      table_sync.session
+    end
 
     # Name of the left table
-    def left_table; table_sync.left_table; end
+    def left_table
+      table_sync.left_table
+    end
 
     # Name of the right table
-    def right_table; table_sync.right_table; end
+    def right_table
+      table_sync.right_table
+    end
 
     # A hash with
     # :+left+: name of the table in the left database
     # :+right+: name of the table in the right database
     def tables
-      @tables ||= {:left => left_table, :right => right_table}
+      @tables ||= { left: left_table, right: right_table }
     end
 
     # Given a column_name => value hash of a full row, returns a
@@ -31,31 +35,33 @@ module RR
     # * +row+: the full row
     # Returns
     def extract_key(row)
-      row.reject {|column, value| not primary_key_names.include? column }
+      row.reject { |column, _value| !primary_key_names.include? column }
     end
 
     # Sync options for the current table sync
-    def sync_options; @sync_options ||= table_sync.sync_options; end
+    def sync_options
+      @sync_options ||= table_sync.sync_options
+    end
 
     # Delegates to Committers::BufferedCommitter#insert_record
-    def insert_record(database, table, values)
+    def insert_record(database, _table, values)
       committer.insert_record(database, tables[database], values)
     end
 
     # Delegates to Committers::BufferedCommitter#update_record
-    def update_record(database, table, values, old_key = nil)
+    def update_record(database, _table, values, old_key = nil)
       committer.update_record(database, tables[database], values, old_key)
     end
 
     # Delegates to Committers::BufferedCommitter#delete_record
-    def delete_record(database, table, values)
+    def delete_record(database, _table, values)
       committer.delete_record(database, tables[database], values)
     end
 
     # Return the committer, creating it if not yet there.
     def committer
       unless @committer
-        committer_class = Committers::committers[sync_options[:committer]]
+        committer_class = Committers.committers[sync_options[:committer]]
         @committer = committer_class.new(session)
       end
       @committer
@@ -95,24 +101,22 @@ module RR
         key = row[primary_key_names[0]]
       else
         key_parts = primary_key_names.map do |column_name|
-          %Q("#{column_name}"=>#{row[column_name].to_s.inspect})
+          %("#{column_name}"=>#{row[column_name].to_s.inspect})
         end
         key = key_parts.join(', ')
       end
       sync_outcome, sync_details = fit_description_columns(outcome, details)
 
-      session.left.insert_record "#{sync_options[:rep_prefix]}_logged_events", {
-        :activity => 'sync',
-        :change_table => left_table,
-        :diff_type => type.to_s,
-        :change_key => key,
-        :left_change_type => nil,
-        :right_change_type => nil,
-        :description => sync_outcome,
-        :long_description => sync_details,
-        :event_time => Time.now,
-        :diff_dump => nil
-      }
+      session.left.insert_record "#{sync_options[:rep_prefix]}_logged_events", activity: 'sync',
+                                                                               change_table: left_table,
+                                                                               diff_type: type.to_s,
+                                                                               change_key: key,
+                                                                               left_change_type: nil,
+                                                                               right_change_type: nil,
+                                                                               description: sync_outcome,
+                                                                               long_description: sync_details,
+                                                                               event_time: Time.now,
+                                                                               diff_dump: nil
     end
 
     # Logs the sync state into the sync state table.
@@ -121,7 +125,8 @@ module RR
     def log_table_sync_state(table, state)
       ensure_sync_state
       row = session.left.select_one(
-        "select id from #{sync_options[:rep_prefix]}_sync_state where table_name = '#{table}'")
+        "select id from #{sync_options[:rep_prefix]}_sync_state where table_name = '#{table}'"
+      )
       values = { 'table_name' => table, 'state' => state }
       values['id'] = row['id'].to_i if row
       session.left.send(row ? :update_record : :insert_record, "#{sync_options[:rep_prefix]}_sync_state", values)

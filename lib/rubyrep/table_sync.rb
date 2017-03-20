@@ -76,7 +76,7 @@ module RR
       scan.run do |type, row|
         yield type, row if block_given? # To enable progress reporting
         unless event_filtered?(type, row)
-          syncer.sync_difference type, row
+          syncer.sync_difference(type, row)
         end
       end
 

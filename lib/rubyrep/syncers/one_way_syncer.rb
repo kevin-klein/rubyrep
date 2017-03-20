@@ -65,7 +65,7 @@ module RR
       # Raises an ArgumentError if option is invalid
       def validate_left_right_record_handling_option(option)
         unless option.respond_to? :call
-          unless [:ignore, :delete, :insert].include? option
+          unless [:ignore, :delete, :insert].include?(option)
             raise ArgumentError.new("#{option.inspect} not a valid :left_record_handling / :right_record_handling option")
           end
         end

@@ -6,6 +6,7 @@ require 'awesome_print'
 
 gem 'activerecord', '>= 3.0.5'
 require 'active_record'
+require 'celluloid/current'
 
 require 'rubyrep/version'
 require 'rubyrep/configuration'
@@ -58,6 +59,11 @@ require 'rubyrep/uninstall_runner'
 require 'rubyrep/uninstall_tables_runner'
 require 'rubyrep/generate_runner'
 require 'rubyrep/noisy_connection'
+
+require 'rubyrep/actors/tregistry'
+require 'rubyrep/actors/tactor'
+require 'rubyrep/actors/pending_changes_actor'
+require 'rubyrep/actors/heartbeat_actor'
 
 Dir["#{File.dirname(__FILE__)}/rubyrep/connection_extenders/*.rb"].each do |extender|
   # jdbc_extender.rb is only loaded if we are running on jruby

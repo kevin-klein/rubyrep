@@ -53,9 +53,8 @@ module RR
     #     end
     #   end
     class TwoWayReplicator
-
       # Register the syncer
-      Replicators.register :two_way => self
+      Replicators.register two_way: self
 
       # The current ReplicationHelper object
       attr_accessor :rep_helper
@@ -64,10 +63,10 @@ module RR
       # Returns a hash with key => value pairs.
       def self.default_options
         {
-          :left_change_handling => :replicate,
-          :right_change_handling => :replicate,
-          :replication_conflict_handling => :ignore,
-          :logged_replication_events => [:ignored_conflicts],
+          left_change_handling: :replicate,
+          right_change_handling: :replicate,
+          replication_conflict_handling: :ignore,
+          logged_replication_events: [:ignored_conflicts]
         }
       end
 
@@ -77,12 +76,11 @@ module RR
       # * +option_key+: the key of the option that is to be checked
       # * +option_value+: the value of the option that is to be checked
       def verify_option(table_spec, valid_option_values, option_key, option_value)
-        unless valid_option_values.include? option_value
-          message = ""
-          message << "#{table_spec.inspect}: " if table_spec
-          message << "#{option_value.inspect} not a valid #{option_key.inspect} option"
-          raise ArgumentError.new(message)
-        end
+        return if valid_option_values.include?(option_value)
+        message = ''
+        message << "#{table_spec.inspect}: " if table_spec
+        message << "#{option_value.inspect} not a valid #{option_key.inspect} option"
+        raise ArgumentError, message
       end
 
       # Verifies if the :+left_change_handling+ / :+right_change_handling+
@@ -102,11 +100,10 @@ module RR
       # Raises an ArgumentError if an option is invalid.
       def validate_conflict_handling_options
         rep_helper.session.configuration.each_matching_option(:replication_conflict_handling) do |table_spec, value|
-          unless value.respond_to? :call
-            verify_option table_spec,
-              [:ignore, :left_wins, :right_wins, :later_wins, :earlier_wins, :later_wins],
-              :replication_conflict_handling, value
-          end
+          next if value.respond_to? :call
+          verify_option table_spec,
+                        [:ignore, :left_wins, :right_wins, :later_wins, :earlier_wins, :later_wins],
+                        :replication_conflict_handling, value
         end
       end
 
@@ -117,8 +114,8 @@ module RR
           values = [values].flatten # ensure that I have an array
           values.each do |value|
             verify_option table_spec,
-              [:ignored_changes, :all_changes, :ignored_conflicts, :all_conflicts],
-              :logged_replication_events, value
+                          [:ignored_changes, :all_changes, :ignored_conflicts, :all_conflicts],
+                          :logged_replication_events, value
           end
         end
       end
@@ -139,19 +136,19 @@ module RR
 
       # Shortcut to calculate the "other" database.
       OTHER_SIDE = {
-        :left => :right,
-        :right => :left
-      }
+        left: :right,
+        right: :left
+      }.freeze
 
       # Specifies how to clear conflicts.
       # The outer hash keys describe the type of the winning change.
       # The inner hash keys describe the type of the loosing change.
       # The inser hash values describe the action to take on the loosing side.
       CONFLICT_STATE_MATRIX = {
-        :insert => {:insert => :update, :update => :update, :delete => :insert},
-        :update => {:insert => :update, :update => :update, :delete => :insert},
-        :delete => {:insert => :delete, :update => :delete, :delete => :delete}
-      }
+        insert: { insert: :update, update: :update, delete: :insert },
+        update: { insert: :update, update: :update, delete: :insert },
+        delete: { insert: :delete, update: :delete, delete: :delete }
+      }.freeze
 
       # Helper function that clears a conflict by taking the change from the
       # specified winning database and updating the other database accordingly.
@@ -184,12 +181,12 @@ module RR
         options = rep_helper.options_for_table(diff.changes[:left].table)
         option_values = [options[:logged_replication_events]].flatten # make sure I have an array
         if diff.type == :conflict
-          return unless option_values.include?(:all_conflicts) or option_values.include?(:ignored_conflicts)
-          return if winner != :ignore and not option_values.include?(:all_conflicts)
-          outcome = {:left => 'left_won', :right => 'right_won', :ignore => 'ignored'}[winner]
+          return unless option_values.include?(:all_conflicts) || option_values.include?(:ignored_conflicts)
+          return if (winner != :ignore) && !option_values.include?(:all_conflicts)
+          outcome = { left: 'left_won', right: 'right_won', ignore: 'ignored' }[winner]
         else
-          return unless option_values.include?(:all_changes) or option_values.include?(:ignored_changes)
-          return if winner != :ignore and not option_values.include?(:all_changes)
+          return unless option_values.include?(:all_changes) || option_values.include?(:ignored_changes)
+          return if (winner != :ignore) && !option_values.include?(:all_changes)
           outcome = winner == :ignore ? 'ignored' : 'replicated'
         end
         rep_helper.log_replication_outcome diff, outcome
@@ -214,11 +211,10 @@ module RR
         target_db = OTHER_SIDE[source_db]
         target_table = rep_helper.corresponding_table(source_db, source_table)
 
-        values = rep_helper.load_record source_db, source_table, source_key
-        # puts values
-        if values == nil
+        values = rep_helper.load_record(source_db, source_table, source_key)
+        if values.nil?
           diff.amend
-          replicate_difference diff, remaining_attempts - 1, "source record for insert vanished"
+          replicate_difference diff, remaining_attempts - 1, 'source record for insert vanished'
         else
           attempt_change('insert', source_db, target_db, diff, remaining_attempts) do
             rep_helper.insert_record target_db, target_table, values
@@ -242,15 +238,15 @@ module RR
         target_table = rep_helper.corresponding_table(source_db, source_table)
 
         values = rep_helper.load_record source_db, source_table, source_key
-        if values == nil
+        if values.nil?
           diff.amend
-          replicate_difference diff, remaining_attempts - 1, "source record for update vanished"
+          replicate_difference diff, remaining_attempts - 1, 'source record for update vanished'
         else
           attempt_change('update', source_db, target_db, diff, remaining_attempts) do
             number_updated = rep_helper.update_record target_db, target_table, values, target_key
             if number_updated == 0
               diff.amend
-              replicate_difference diff, remaining_attempts - 1, "target record for update vanished"
+              replicate_difference diff, remaining_attempts - 1, 'target record for update vanished'
             else
               log_replication_outcome source_db, diff
             end
@@ -270,19 +266,17 @@ module RR
       # * +target_db+: either :+left+ or :+right+ - target database of replication
       # * +diff+: the current ReplicationDifference instance
       # * +remaining_attempts+: the number of remaining replication attempts for this difference
-      def attempt_change(action, source_db, target_db, diff, remaining_attempts)
-        begin
-          rep_helper.session.send(target_db).execute "savepoint rr_#{action}_#{remaining_attempts}"
-          yield
-          unless rep_helper.new_transaction?
-            rep_helper.session.send(target_db).execute "release savepoint rr_#{action}_#{remaining_attempts}"
-          end
-        rescue Exception => e
-          rep_helper.session.send(target_db).execute "rollback to savepoint rr_#{action}_#{remaining_attempts}"
-          diff.amend
-          replicate_difference diff, remaining_attempts - 1,
-            "#{action} failed with #{e.message}"
+      def attempt_change(action, _source_db, target_db, diff, remaining_attempts)
+        rep_helper.session.send(target_db).execute "savepoint rr_#{action}_#{remaining_attempts}"
+        yield
+        unless rep_helper.new_transaction?
+          rep_helper.session.send(target_db).execute "release savepoint rr_#{action}_#{remaining_attempts}"
         end
+      rescue Exception => e
+        rep_helper.session.send(target_db).execute "rollback to savepoint rr_#{action}_#{remaining_attempts}"
+        diff.amend
+        replicate_difference diff, remaining_attempts - 1,
+                             "#{action} failed with #{e.message}"
       end
 
       # Attempts to delete the source record from the target database.
@@ -299,9 +293,9 @@ module RR
 
         attempt_change('delete', source_db, target_db, diff, remaining_attempts) do
           number_updated = rep_helper.delete_record target_db, target_table, target_key
-          if number_updated == 0
+          if number_updated.zero?
             diff.amend
-            replicate_difference diff, remaining_attempts - 1, "target record for delete vanished"
+            replicate_difference diff, remaining_attempts - 1, 'target record for delete vanished'
           else
             log_replication_outcome source_db, diff
           end
@@ -313,9 +307,9 @@ module RR
       # * :+remaining_attempts+: how many more times a replication will be attempted
       # * :+previous_failure_description+: why the previous replication attempt failed
       def replicate_difference(diff, remaining_attempts = MAX_REPLICATION_ATTEMPTS, previous_failure_description = nil)
-        raise Exception, previous_failure_description || "max replication attempts exceeded" if remaining_attempts == 0
+        raise Exception, previous_failure_description || 'max replication attempts exceeded' if remaining_attempts == 0
         options = rep_helper.options_for_table(diff.changes[:left].table)
-        if diff.type == :left or diff.type == :right
+        if (diff.type == :left) || (diff.type == :right)
           key = diff.type == :left ? :left_change_handling : :right_change_handling
           option = options[key]
 
@@ -356,7 +350,6 @@ module RR
           end
         end
       end
-
     end
   end
 end

@@ -18,7 +18,7 @@ describe NoisyConnection do
       })
 
       @connection.select_record(:table => 'scanner_records').should == {
-        'id' => 1,
+        'id' => '1',
         'name' => 'Alice - exists in both databases'
       }
     ensure

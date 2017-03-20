@@ -1,5 +1,4 @@
 module RR
-
   # The Configuration class holds the default configuration options for Rubyrep.
   # Configuration values are changed with the Initializer::run method.
   class Configuration
@@ -26,33 +25,33 @@ module RR
     # Returns true unless running on windows...
     def self.true_if_running_in_a_terminal_and_not_under_windows
       # Not using RUBY_PLATFORM as it should also work under JRuby
-      $stdout.tty? and not ENV['OS'] =~ /windows/i
+      $stdout.tty? && !(ENV['OS'] =~ /windows/i)
     end
 
     # Default #options for a new Configuration object.
     DEFAULT_OPTIONS = {
-      :proxy_block_size => 1000,
-      :row_buffer_size => 1000,
-      :mem_buffer_size => 4294967295, # Max value for 32bit
-      :replicator => :two_way,
-      :committer => :buffered_commit,
-      :commit_frequency => 1000,
-      :table_ordering => true,
-      :scan_progress_printer => :progress_bar,
-      :use_ansi => true_if_running_in_a_terminal_and_not_under_windows,
-      :initial_sync => true,
-      :adjust_sequences => true,
-      :sequence_adjustment_buffer => 0,
-      :sequence_increment => 2,
-      :left_sequence_offset => 0,
-      :right_sequence_offset => 1,
-      :replication_interval => 1,
-      :auto_key_limit => 0,
-      :database_connection_timeout => 10,
+      proxy_block_size: 1000,
+      row_buffer_size: 1000,
+      mem_buffer_size: 4_294_967_295, # Max value for 32bit
+      replicator: :two_way,
+      committer: :buffered_commit,
+      commit_frequency: 1000,
+      table_ordering: true,
+      scan_progress_printer: :progress_bar,
+      use_ansi: true_if_running_in_a_terminal_and_not_under_windows,
+      initial_sync: true,
+      adjust_sequences: true,
+      sequence_adjustment_buffer: 0,
+      sequence_increment: 2,
+      left_sequence_offset: 0,
+      right_sequence_offset: 1,
+      replication_interval: 1,
+      auto_key_limit: 0,
+      database_connection_timeout: 10,
 
-      :rep_prefix => 'rr',
-      :key_sep => '|',
-    }
+      rep_prefix: 'rr',
+      key_sep: '|'
+    }.freeze
 
     # General options.
     # Possible settings:
@@ -185,7 +184,7 @@ module RR
       included_table_specs << table_spec unless included_table_specs.include?(table_spec)
       add_table_options(table_spec, options) if options
     end
-    alias_method :include_table, :include_tables
+    alias include_table include_tables
 
     # Excludes the specified table from the list of tables that should be
     # processed.
@@ -194,7 +193,7 @@ module RR
     def exclude_tables(table_spec)
       excluded_table_specs << table_spec unless excluded_table_specs.include?(table_spec)
     end
-    alias_method :exclude_table, :exclude_tables
+    alias exclude_table exclude_tables
 
     # Adds the specified options for the provided +table_spec+.
     # A +table_spec+ can be either
@@ -206,9 +205,9 @@ module RR
     # * :+primary_key_names+: array of primary key names
     def add_table_options(table_spec, options)
       i = nil
-      tables_with_options.each_with_index { |table_options, k|
+      tables_with_options.each_with_index do |table_options, k|
         i = k if table_options[0] == table_spec
-      }
+      end
       if i
         table_options = tables_with_options[i][1]
       else
@@ -217,7 +216,7 @@ module RR
       end
       table_options.merge! options
     end
-    alias_method :add_table_option, :add_table_options
+    alias add_table_option add_table_options
 
     # Yields all table specs that have been set up with the given option
     # * +key+: the option key
@@ -243,11 +242,11 @@ module RR
       resulting_options = options.clone
       tables_with_options.each do |table_options|
         match = false
-        if table_options[0].kind_of? Regexp
-          match = (table_options[0] =~ table)
-        else
-          match = (table_options[0].sub(/(^.*),.*/,'\1').strip == table)
-        end
+        match = if table_options[0].is_a? Regexp
+                  (table_options[0] =~ table)
+                else
+                  (table_options[0].sub(/(^.*),.*/, '\1').strip == table)
+                end
         resulting_options.merge! table_options[1] if match
       end
 
@@ -273,6 +272,5 @@ module RR
       self.right = {}
       self.options = DEFAULT_OPTIONS.clone
     end
-
   end
 end

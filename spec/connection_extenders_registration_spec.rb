@@ -40,11 +40,11 @@ end
 describe ConnectionExtenders, "Registration" do
   before(:each) do
     Initializer.configuration = standard_config
-    @@old_cache_status = ConnectionExtenders.use_db_connection_cache(false)
+    @old_cache_status = ConnectionExtenders.use_db_connection_cache(false)
   end
 
   after(:each) do
-    ConnectionExtenders.use_db_connection_cache(@@old_cache_status)
+    ConnectionExtenders.use_db_connection_cache(@old_cache_status)
   end
 
   it "extenders should return list of registered connection extenders" do

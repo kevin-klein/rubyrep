@@ -114,7 +114,7 @@ EOS
 
     # Prepares the replication
     def prepare_replication
-      initializer = ReplicationInitializer.new session
+      initializer = ReplicationInitializer.new(session)
       initializer.prepare_replication
     end
 

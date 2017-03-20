@@ -30,7 +30,7 @@ describe ProxyCursor do
     cursor = ProxyCursor.new(connection, 'scanner_records')
     cursor.prepare_fetch
     cursor.cursor.should be_an_instance_of(TypeCastingCursor)
-    cursor.cursor.next_row.should == {'id' => 1, 'name' => 'Alice - exists in both databases'}
+    cursor.cursor.next_row.should == {'id' => '1', 'name' => 'Alice - exists in both databases'}
 
     connection.execute('delete from scanner_records')
   end

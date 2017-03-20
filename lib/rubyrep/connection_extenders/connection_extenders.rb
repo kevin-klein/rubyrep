@@ -10,14 +10,13 @@ class ActiveRecord::ConnectionAdapters::Column
   # This monkey patch fixes the problem.
   def self.fast_string_to_time(string)
     if string =~ Format::ISO_DATETIME
-      microsec = ($7.to_f * 1_000_000).round # used to be #to_i instead
-      new_time $1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i, microsec
+      microsec = (Regexp.last_match(7).to_f * 1_000_000).round # used to be #to_i instead
+      new_time Regexp.last_match(1).to_i, Regexp.last_match(2).to_i, Regexp.last_match(3).to_i, Regexp.last_match(4).to_i, Regexp.last_match(5).to_i, Regexp.last_match(6).to_i, microsec
     end
   end
 end
 
 module RR
-
   # Connection extenders provide additional database specific functionality
   # not coming in the ActiveRecord library.
   # This module itself only provides functionality to register and retrieve
@@ -50,11 +49,15 @@ module RR
     def self.db_connect_without_cache(config)
       adapter = config[:adapter]
 
-      pool = ActiveRecord::Base.establish_connection(config)
+      begin
+        pool = ActiveRecord::Base.establish_connection(config)
+      rescue LoadError => e
+        raise RuntimeError.new(e.message)
+      end
       connection = pool.checkout
       pool.remove(connection)
 
-      extender = ""
+      extender = ''
       if RUBY_PLATFORM =~ /java/
         extender = :jdbc
       elsif ConnectionExtenders.extenders.include? config[:adapter].to_sym
@@ -66,7 +69,7 @@ module RR
 
       # Hack to get Postgres schema support under JRuby to par with the standard
       # ruby version
-      if RUBY_PLATFORM =~ /java/ and config[:adapter].to_sym == :postgresql
+      if RUBY_PLATFORM =~ /java/ && (config[:adapter].to_sym == :postgresql)
         connection.extend RR::ConnectionExtenders::PostgreSQLExtender
         connection.initialize_search_path
       end
@@ -80,10 +83,14 @@ module RR
     @@use_cache = true
 
     # Returns the current cache status (+true+ if caching is used; +false+ otherwise).
-    def self.use_cache?; @@use_cache; end
+    def self.use_cache?
+      @@use_cache
+    end
 
     # Returns the connection cache hash.
-    def self.connection_cache; @@connection_cache; end
+    def self.connection_cache
+      @@connection_cache
+    end
 
     # Sets a new connection cache
     def self.connection_cache=(cache)
@@ -95,17 +102,17 @@ module RR
     # * +config+: database configuration (as provided to #db_connect)
     def self.install_logger(db_connection, config)
       if config[:logger]
-        if config[:logger].respond_to?(:debug)
-          logger = config[:logger]
-        else
-          logger = ActiveSupport::Logger.new(config[:logger])
-        end
+        logger = if config[:logger].respond_to?(:debug)
+                   config[:logger]
+                 else
+                   ActiveSupport::Logger.new(config[:logger])
+                 end
         db_connection.instance_variable_set :@logger, logger
         if ActiveSupport.const_defined?(:Notifications)
           connection_object_id = db_connection.object_id
-          db_connection.log_subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |name, start, finish, id, payload|
-            if payload[:connection_id] == connection_object_id and logger.debug?
-              logger.debug payload[:sql].squeeze(" ")
+          db_connection.log_subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |_name, _start, _finish, _id, payload|
+            if (payload[:connection_id] == connection_object_id) && logger.debug?
+              logger.debug payload[:sql].squeeze(' ')
             end
           end
         end
@@ -117,10 +124,10 @@ module RR
     # A new database connection is created only if no according cached connection
     # is available.
     def self.db_connect(config)
-      if not use_cache?
-        db_connection = db_connect_without_cache config
+      if !use_cache?
+        db_connection = db_connect_without_cache(config)
       else
-        config_dump = Marshal.dump config.reject {|key, | [:proxy_host, :proxy_port, :logger].include? key}
+        config_dump = Marshal.dump config.reject { |key,| [:proxy_host, :proxy_port, :logger].include? key }
         config_checksum = Digest::SHA1.hexdigest(config_dump)
         @@connection_cache ||= {}
 
@@ -139,7 +146,8 @@ module RR
     # If status == true: enable the cache. If status == false: don' use cache
     # Returns the old connection caching status
     def self.use_db_connection_cache(status)
-      old_status, @@use_cache = @@use_cache, status
+      old_status = @@use_cache
+      @@use_cache = status
       old_status
     end
 

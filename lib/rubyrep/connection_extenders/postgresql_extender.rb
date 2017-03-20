@@ -94,19 +94,6 @@ module RR
         @schemas
       end
 
-      # *** Monkey patch***
-      # Returns the list of all tables in the schema search path or a specified schema.
-      # This overwrites the according ActiveRecord::PostgreSQLAdapter method
-      # to make sure that also search paths with spaces work
-      # (E. g. 'public, rr' instead of only 'public,rr')
-      # def tables(name = nil)
-      #   self.select_all(<<-SQL, name).map { |row| row['tablename'] }
-      #     SELECT tablename
-      #       FROM pg_tables
-      #      WHERE schemaname IN (#{schemas})
-      #   SQL
-      # end
-
       # Disables schema extraction from table names by overwriting the according
       # ActiveRecord method.
       # Necessary to support table names containing dots (".").

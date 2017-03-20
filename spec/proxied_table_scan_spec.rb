@@ -109,7 +109,7 @@ describe ProxiedTableScan do
     end
     # in this scenario the right table has the 'highest' data,
     # so 'right-sided' data are already implicitely tested here
-    diff.should == [[:conflict, [{"id"=>2, "name"=>"Bob - left database version"}, {"id"=>2, "name"=>"Bob - right database version"}]], [:left, {"id"=>3, "name"=>"Charlie - exists in left database only"}], [:right, {"id"=>4, "name"=>"Dave - exists in right database only"}], [:left, {"id"=>5, "name"=>"Eve - exists in left database only"}], [:right, {"id"=>6, "name"=>"Fred - exists in right database only"}]]
+    diff.should == [[:conflict, [{"id"=>'2', "name"=>"Bob - left database version"}, {"id"=>'2', "name"=>"Bob - right database version"}]], [:left, {"id"=>'3', "name"=>"Charlie - exists in left database only"}], [:right, {"id"=>'4', "name"=>"Dave - exists in right database only"}], [:left, {"id"=>'5', "name"=>"Eve - exists in left database only"}], [:right, {"id"=>'6', "name"=>"Fred - exists in right database only"}]]
   end
 
   it "compare_blocks should destroy the created cursors" do
@@ -147,7 +147,7 @@ describe ProxiedTableScan do
     end
     # in this scenario the right table has the 'highest' data,
     # so 'right-sided' data are already implicitely tested here
-    diff.should == [[:conflict, [{"id"=>2, "name"=>"Bob - left database version"}, {"id"=>2, "name"=>"Bob - right database version"}]], [:left, {"id"=>3, "name"=>"Charlie - exists in left database only"}], [:right, {"id"=>4, "name"=>"Dave - exists in right database only"}], [:left, {"id"=>5, "name"=>"Eve - exists in left database only"}], [:right, {"id"=>6, "name"=>"Fred - exists in right database only"}]]
+    diff.should == [[:conflict, [{"id"=>'2', "name"=>"Bob - left database version"}, {"id"=>'2', "name"=>"Bob - right database version"}]], [:left, {"id"=>'3', "name"=>"Charlie - exists in left database only"}], [:right, {"id"=>'4', "name"=>"Dave - exists in right database only"}], [:left, {"id"=>'5', "name"=>"Eve - exists in left database only"}], [:right, {"id"=>'6', "name"=>"Fred - exists in right database only"}]]
   end
 
   it "run should update the progress" do
