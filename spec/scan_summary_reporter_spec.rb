@@ -4,19 +4,19 @@ include RR
 
 describe ScanReportPrinters::ScanSummaryReporter do
   before(:each) do
-    $stdout.should_receive(:puts).any_number_of_times
+    allow($stdout).to receive(:puts)
   end
 
   it "should register itself with ScanRunner" do
-    RR::ScanReportPrinters.printers.any? do |printer|
+    expect(RR::ScanReportPrinters.printers.any? do |printer|
       printer[:printer_class] == ScanReportPrinters::ScanSummaryReporter
-    end.should be_true
+    end).to be_truthy
   end
   
   it "initialize should detect if the detailed number of differnces should be counted" do
-    ScanReportPrinters::ScanSummaryReporter.new(nil, nil).only_totals.should be_true
-    ScanReportPrinters::ScanSummaryReporter.new(nil, "bla").only_totals.should be_true
-    ScanReportPrinters::ScanSummaryReporter.new(nil, "detailed").only_totals.should be_false
+    expect(ScanReportPrinters::ScanSummaryReporter.new(nil, nil).only_totals).to be_truthy
+    expect(ScanReportPrinters::ScanSummaryReporter.new(nil, "bla").only_totals).to be_truthy
+    expect(ScanReportPrinters::ScanSummaryReporter.new(nil, "detailed").only_totals).to be_falsey
   end
   
   it "scan should count differences correctly in totals mode" do
@@ -33,7 +33,7 @@ describe ScanReportPrinters::ScanSummaryReporter do
         reporter.report_difference :left, :dummy_row
         reporter.report_difference :right, :dummy_row
       end
-      $stdout.string.should =~ /left_table \/ right_table [\.\s]*3\n/
+      expect($stdout.string).to match(/left_table \/ right_table [\.\s]*3\n/)
     ensure 
       $stdout = org_stdout
     end
@@ -53,7 +53,7 @@ describe ScanReportPrinters::ScanSummaryReporter do
         reporter.report_difference :right, :dummy_row
         reporter.report_difference :right, :dummy_row
       end
-      $stdout.string.should =~ /left_table\s+1\s+2\s+3\n/
+      expect($stdout.string).to match(/left_table\s+1\s+2\s+3\n/)
     ensure 
       $stdout = org_stdout
     end

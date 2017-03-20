@@ -9,8 +9,8 @@ describe TableSync do
     begin
       config.options = {:syncer => :bla}
       config.include_tables 'scanner_records', {:syncer => :blub}
-      TableSync.new(Session.new(config), 'scanner_records').sync_options[:syncer] \
-        .should == :blub
+      expect(TableSync.new(Session.new(config), 'scanner_records').sync_options[:syncer]) \
+        .to eq(:blub)
     ensure
       config.instance_eval {@tables_with_options = old_table_specific_options}
     end
@@ -28,8 +28,8 @@ describe TableSync do
     session = Session.new config
     sync = TableSync.new(session, 'scanner_records')
 
-    session.left.should_receive(:execute).with('dummy_command')
-    session.right.should_receive(:execute).with('dummy_command')
+    expect(session.left).to receive(:execute).with('dummy_command')
+    expect(session.right).to receive(:execute).with('dummy_command')
 
     sync.execute_sync_hook(:before_table_sync)
   end
@@ -45,14 +45,14 @@ describe TableSync do
 
     sync.execute_sync_hook(:before_table_sync)
 
-    received_handler.should == :dummy_helper
+    expect(received_handler).to eq(:dummy_helper)
   end
 
   it "event_filtered? should return false if there is no event filter" do
     session = Session.new standard_config
     sync = TableSync.new(session, 'scanner_records')
 
-    sync.event_filtered?(:left, 'id' => 1).should be_false
+    expect(sync.event_filtered?(:left, 'id' => 1)).to be_falsey
   end
 
   it "event_filtered? should return false if event filter does not filter sync events" do
@@ -61,7 +61,7 @@ describe TableSync do
     session = Session.new config
     sync = TableSync.new(session, 'scanner_records')
 
-    sync.event_filtered?(:left, 'id' => 1).should be_false
+    expect(sync.event_filtered?(:left, 'id' => 1)).to be_falsey
   end
 
   it "event_filtered? should signal filtering (i. e. return true) if the event filter result is false" do
@@ -74,7 +74,7 @@ describe TableSync do
     session = Session.new config
     sync = TableSync.new(session, 'scanner_records')
     sync.helper = SyncHelper.new(sync)
-    sync.event_filtered?(:left, 'id' => 1).should be_true
+    expect(sync.event_filtered?(:left, 'id' => 1)).to be_truthy
   end
 
   it "event_filtered? should return false if the event filter result is true" do
@@ -88,10 +88,10 @@ describe TableSync do
     session = Session.new config
     sync = TableSync.new(session, 'scanner_records')
     sync.helper = SyncHelper.new(sync)
-    sync.event_filtered?(:left, 'id' => 1, 'name' => 'bla').should be_false
+    expect(sync.event_filtered?(:left, 'id' => 1, 'name' => 'bla')).to be_falsey
 
     # verify correct parameter assignment
-    filter[:args].should == ['scanner_records', {'id' => 1}, sync.helper, :left, {'id' => 1, 'name' => 'bla'}]
+    expect(filter[:args]).to eq(['scanner_records', {'id' => 1}, sync.helper, :left, {'id' => 1, 'name' => 'bla'}])
   end
 
   it "run should synchronize the databases" do
@@ -115,22 +115,22 @@ describe TableSync do
 
       # Verify that sync events are logged
       row = session.left.select_one("select * from rr_logged_events where change_key = '2' order by id")
-      row['change_table'].should == 'scanner_records'
-      row['diff_type'].should == 'conflict'
-      row['description'].should == 'left_wins'
+      expect(row['change_table']).to eq('scanner_records')
+      expect(row['diff_type']).to eq('conflict')
+      expect(row['description']).to eq('left_wins')
 
       # verify that the table was synchronized
       left_records = session.left.select_all("select * from scanner_records where id <> 6 order by id")
       right_records = session.right.select_all("select * from scanner_records where id <> 6 order by id")
-      left_records.should == right_records
+      expect(left_records).to eq(right_records)
 
       # verify that the filtered out record was not synced
-      session.left.select_one("select * from scanner_records where id = 6").
-        should be_nil
+      expect(session.left.select_one("select * from scanner_records where id = 6")).
+        to be_nil
 
       # verify that hooks where called
-      before_hook_called.should be_true
-      after_hook_called.should be_true
+      expect(before_hook_called).to be_truthy
+      expect(after_hook_called).to be_truthy
     ensure
       Committers::NeverCommitter.rollback_current_session
       session.left.execute "delete from rr_logged_events"

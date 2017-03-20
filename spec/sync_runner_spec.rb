@@ -48,20 +48,20 @@ describe SyncRunner do
   end
 
   it "should register itself with CommandRunner" do
-    CommandRunner.commands['sync'][:command].should == SyncRunner
-    CommandRunner.commands['sync'][:description].should be_an_instance_of(String)
+    expect(CommandRunner.commands['sync'][:command]).to eq(SyncRunner)
+    expect(CommandRunner.commands['sync'][:description]).to be_an_instance_of(String)
   end
 
   it "prepare_table_pairs should sort the tables" do
     session = Session.new standard_config
-    session.should_receive(:sort_table_pairs).
+    expect(session).to receive(:sort_table_pairs).
       with(:dummy_table_pairs).
       and_return(:sorted_dummy_table_pairs)
 
     sync_runner = SyncRunner.new
-    sync_runner.stub!(:session).and_return(session)
+    allow(sync_runner).to receive(:session).and_return(session)
 
-    sync_runner.prepare_table_pairs(:dummy_table_pairs).should == :sorted_dummy_table_pairs
+    expect(sync_runner.prepare_table_pairs(:dummy_table_pairs)).to eq(:sorted_dummy_table_pairs)
   end
 
   it "execute should sync the specified tables" do
@@ -84,12 +84,13 @@ describe SyncRunner do
 
       sync_runner.execute
 
-      $stdout.string.should =~
+      expect($stdout.string).to match(
         /scanner_records .* 5\n/
+      )
 
       left_records = session.left.connection.select_all("select * from scanner_records order by id").to_hash
       right_records = session.right.connection.select_all("select * from scanner_records order by id").to_hash
-      left_records.should == right_records
+      expect(left_records).to eq(right_records)
     ensure
       $stdout = org_stdout
       Initializer.configuration = old_config if old_config
@@ -97,17 +98,17 @@ describe SyncRunner do
   end
 
   it "create_processor should create the TableSync instance" do
-    TableSync.should_receive(:new).
+    expect(TableSync).to receive(:new).
       with(:dummy_session, "left_table", "right_table").
       and_return(:dummy_table_sync)
     sync_runner = SyncRunner.new
-    sync_runner.should_receive(:session).and_return(:dummy_session)
-    sync_runner.create_processor("left_table", "right_table").
-      should == :dummy_table_sync
+    expect(sync_runner).to receive(:session).and_return(:dummy_session)
+    expect(sync_runner.create_processor("left_table", "right_table")).
+      to eq(:dummy_table_sync)
   end
 
   it "summary_description should return a description" do
-    SyncRunner.new.summary_description.should be_an_instance_of(String)
+    expect(SyncRunner.new.summary_description).to be_an_instance_of(String)
   end
 
 end

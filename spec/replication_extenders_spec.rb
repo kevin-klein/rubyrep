@@ -13,20 +13,20 @@ describe ReplicationExtenders do
   end
   
   it "extenders should return list of registered connection extenders" do
-    ReplicationExtenders.extenders.include?(:postgresql).should be_true
+    expect(ReplicationExtenders.extenders.include?(:postgresql)).to be_truthy
   end
   
   it "register should register a new connection extender" do
     ReplicationExtenders.register(:bla => :blub)
     
-    ReplicationExtenders.extenders.include?(:bla).should be_true
+    expect(ReplicationExtenders.extenders.include?(:bla)).to be_truthy
   end
   
   it "register should replace already existing connection extenders" do
     ReplicationExtenders.register(:bla => :blub)
     ReplicationExtenders.register(:bla => :blub2)
     
-    ReplicationExtenders.extenders[:bla].should == :blub2
+    expect(ReplicationExtenders.extenders[:bla]).to eq(:blub2)
   end
 end
 

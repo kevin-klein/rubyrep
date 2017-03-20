@@ -17,35 +17,35 @@ describe NoisyConnection do
         'name' => 'Alice - exists in both databases'
       })
 
-      @connection.select_record(:table => 'scanner_records').should == {
+      expect(@connection.select_record(:table => 'scanner_records')).to eq({
         'id' => '1',
         'name' => 'Alice - exists in both databases'
-      }
+      })
     ensure
       @connection.execute('delete from scanner_records')
     end
   end
 
   it "insert_record should write nil values correctly" do
-    @connection.sweeper.should_receive(:ping).exactly(2).times
+    expect(@connection.sweeper).to receive(:ping).exactly(2).times
     begin
       @connection.insert_record('extender_combined_key', 'first_id' => 8, 'second_id' => '9', 'name' => nil)
-      @connection.select_one(
+      expect(@connection.select_one(
         "select name from extender_combined_key where (first_id, second_id) = (8, 9)"
-      ).should == {"name" => nil}
+      )).to eq({"name" => nil})
     ensure
       @connection.execute('delete from extender_combined_key')
     end
   end
 
   it "delete_record should delete the specified record" do
-    @connection.sweeper.should_receive(:ping).exactly(2).times
+    expect(@connection.sweeper).to receive(:ping).exactly(2).times
     begin
       @connection.delete_record('extender_combined_key', 'first_id' => 1, 'second_id' => '1', 'name' => 'xy')
-      @connection.select_one(
+      expect(@connection.select_one(
         "select first_id, second_id, name
-         from extender_combined_key where (first_id, second_id) = (1, 1)") \
-        .should be_nil
+         from extender_combined_key where (first_id, second_id) = (1, 1)")) \
+        .to be_nil
     ensure
       @connection.execute('delete from extender_combined_key')
     end
@@ -55,8 +55,8 @@ describe NoisyConnection do
     initializer = ReplicationInitializer.new Session.new(standard_config)
     begin
       @connection.execute "insert into scanner_records(id,name) values(99, 'bla')"
-      @connection.select_one("select name from scanner_records where id = 99")['name'].
-        should == 'bla'
+      expect(@connection.select_one("select name from scanner_records where id = 99")['name']).
+        to eq('bla')
     ensure
       @connection.execute "delete from scanner_records where id = 99"
     end

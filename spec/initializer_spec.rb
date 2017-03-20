@@ -4,7 +4,7 @@ include RR
 
 describe Initializer do
   it "should have an empty configuration" do
-    Initializer::configuration.should be_an_instance_of(Configuration)
+    expect(Initializer::configuration).to be_an_instance_of(Configuration)
   end
 end
 
@@ -15,7 +15,7 @@ describe Initializer do
 
   it "run should yield the configuration object" do
     Initializer::run do |config|
-      config.should be_an_instance_of(Configuration)
+      expect(config).to be_an_instance_of(Configuration)
     end 
   end
 
@@ -27,20 +27,20 @@ describe Initializer do
 
   it "configuration should return the current configuration" do
     make_dummy_configuration_change
-    Initializer::configuration.should be_an_instance_of(Configuration)
-    Initializer::configuration.left.should == :dummy
+    expect(Initializer::configuration).to be_an_instance_of(Configuration)
+    expect(Initializer::configuration.left).to eq(:dummy)
   end
   
   it "configuration= should set a new configuration" do
     make_dummy_configuration_change
     Initializer::configuration = :dummy_config
-    Initializer::configuration.should == :dummy_config
+    expect(Initializer::configuration).to eq(:dummy_config)
   end
   
   it "reset should clear the configuration" do
     make_dummy_configuration_change
     Initializer::reset
-    Initializer::configuration.left.should {}
+    expect(Initializer::configuration.left).to {}
   end
 end
 

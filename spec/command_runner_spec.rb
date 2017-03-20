@@ -14,17 +14,17 @@ describe CommandRunner do
   end
 
   it "show_version should print the version string" do
-    $stdout.should_receive(:puts).with(/rubyrep version ([0-9]+\.){2}[0-9]+/)
+    expect($stdout).to receive(:puts).with(/rubyrep version ([0-9]+\.){2}[0-9]+/)
     CommandRunner.show_version
   end
 
   it "register should register commands, commands should return it" do
     CommandRunner.register :bla => :bla_command
     CommandRunner.register :blub => :blub_command
-    CommandRunner.commands.should == {
+    expect(CommandRunner.commands).to eq({
       :bla => :bla_command,
       :blub => :blub_command
-    }
+    })
   end
 
   it "run should print a short help if --help is specified" do
@@ -33,9 +33,9 @@ describe CommandRunner do
     begin
       CommandRunner.register 'c1' => {:description => 'desc 1'}, 'c2' => {:description => 'desc 2'}
       CommandRunner.run(['--help'])
-      $stderr.string.should =~ /Usage/
-      $stderr.string.should =~ /c1.*desc 1\n/
-      $stderr.string.should =~ /c2.*desc 2\n/
+      expect($stderr.string).to match(/Usage/)
+      expect($stderr.string).to match(/c1.*desc 1\n/)
+      expect($stderr.string).to match(/c2.*desc 2\n/)
     ensure
       $stderr = org_stderr
     end
@@ -45,8 +45,8 @@ describe CommandRunner do
     org_stderr = $stderr
     $stderr = StringIO.new
     begin
-      CommandRunner.run([]).should == 1
-      $stderr.string.should =~ /Available commands/
+      expect(CommandRunner.run([])).to eq(1)
+      expect($stderr.string).to match(/Available commands/)
     ensure
       $stderr = org_stderr
     end
@@ -56,24 +56,24 @@ describe CommandRunner do
     org_stderr = $stderr
     $stderr = StringIO.new
     begin
-      CommandRunner.run(['--help']).should == 0
-      $stderr.string.should =~ /Available commands/
+      expect(CommandRunner.run(['--help'])).to eq(0)
+      expect($stderr.string).to match(/Available commands/)
       $stderr = StringIO.new
-      CommandRunner.run(['help']).should == 0
-      $stderr.string.should =~ /Available commands/
+      expect(CommandRunner.run(['help'])).to eq(0)
+      expect($stderr.string).to match(/Available commands/)
     ensure
       $stderr = org_stderr
     end
   end
 
   it "run should print version if --version is given" do
-    CommandRunner.should_receive(:show_version)
+    expect(CommandRunner).to receive(:show_version)
     CommandRunner.run(['--version'])
   end
 
   it "run should call the specified command with the specified params" do
     c = double('dummy_command')
-    c.should_receive(:run).with(['param1', 'param2'])
+    expect(c).to receive(:run).with(['param1', 'param2'])
     CommandRunner.register 'dummy_command' => {:command => c}
     CommandRunner.run(['dummy_command', 'param1', 'param2'])
   end
@@ -82,8 +82,8 @@ describe CommandRunner do
     org_stderr = $stderr
     $stderr = StringIO.new
     begin
-      CommandRunner.run('non-existing-command').should == 1
-      $stderr.string.should =~ /Available commands/
+      expect(CommandRunner.run('non-existing-command')).to eq(1)
+      expect($stderr.string).to match(/Available commands/)
     ensure
       $stderr = org_stderr
     end
@@ -96,15 +96,15 @@ describe CommandRunner do
       c = double('dummy_command')
       allow(c).to receive(:run).and_raise('bla')
       CommandRunner.register 'dummy_command' => {:command => c}
-      CommandRunner.run(['--verbose', 'dummy_command', '-c', 'non_existing_file']).should == 1
-      $stderr.string.should =~ /Exception caught/
-      $stderr.string.should =~ /command_runner.rb:[0-9]+:in /
+      expect(CommandRunner.run(['--verbose', 'dummy_command', '-c', 'non_existing_file'])).to eq(1)
+      expect($stderr.string).to match(/Exception caught/)
+      expect($stderr.string).to match(/command_runner.rb:[0-9]+:in /)
 
       # also verify that no stacktrace is printed if --verbose is not specified
       $stderr = StringIO.new
-      CommandRunner.run(['dummy_command', '-c', 'non_existing_file']).should == 1
-      $stderr.string.should =~ /Exception caught/
-      $stderr.string.should_not =~ /command_runner.rb:[0-9]+:in /
+      expect(CommandRunner.run(['dummy_command', '-c', 'non_existing_file'])).to eq(1)
+      expect($stderr.string).to match(/Exception caught/)
+      expect($stderr.string).not_to match(/command_runner.rb:[0-9]+:in /)
     ensure
       $stderr = org_stderr
     end
@@ -113,12 +113,12 @@ end
 
 describe HelpRunner do
   it "should register itself" do
-    CommandRunner.commands['help'][:command].should == HelpRunner
-    CommandRunner.commands['help'][:description].should be_an_instance_of(String)
+    expect(CommandRunner.commands['help'][:command]).to eq(HelpRunner)
+    expect(CommandRunner.commands['help'][:description]).to be_an_instance_of(String)
   end
 
   it "run should call help for the specified command" do
-    CommandRunner.should_receive(:run).with(['dummy_command', '--help'])
+    expect(CommandRunner).to receive(:run).with(['dummy_command', '--help'])
     HelpRunner.run(['dummy_command'])
   end
 
@@ -127,11 +127,11 @@ describe HelpRunner do
     $stderr = StringIO.new
     begin
       HelpRunner.run(['--help'])
-      $stderr.string.should =~ /Shows the help for the specified command/
+      expect($stderr.string).to match(/Shows the help for the specified command/)
 
       $stderr = StringIO.new
       HelpRunner.run(['help'])
-      $stderr.string.should =~ /Shows the help for the specified command/
+      expect($stderr.string).to match(/Shows the help for the specified command/)
     ensure
       $stderr = org_stderr
     end

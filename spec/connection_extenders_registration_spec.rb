@@ -14,14 +14,14 @@ describe ConnectionExtenders do
     configuration.left[:logger] = logger
     session = Session.new configuration
 
-    session.left.connection.instance_eval {@logger}.should == logger
-    session.right.connection.instance_eval {@logger}.should_not == logger
+    expect(session.left.connection.instance_eval {@logger}).to eq(logger)
+    expect(session.right.connection.instance_eval {@logger}).not_to eq(logger)
 
     session.left.select_one "select 'left_query'"
     session.right.select_one "select 'right_query'"
 
-    io.string.should =~ /left_query/
-    io.string.should_not =~ /right_query/
+    expect(io.string).to match(/left_query/)
+    expect(io.string).not_to match(/right_query/)
   end
 
   it "db_connect should create and install the specified logger" do
@@ -32,8 +32,8 @@ describe ConnectionExtenders do
     session.left.select_one "select 'left_query'"
     session.right.select_one "select 'right_query'"
 
-    io.string.should =~ /left_query/
-    io.string.should_not =~ /right_query/
+    expect(io.string).to match(/left_query/)
+    expect(io.string).not_to match(/right_query/)
   end
 end
 
@@ -48,20 +48,20 @@ describe ConnectionExtenders, "Registration" do
   end
 
   it "extenders should return list of registered connection extenders" do
-    ConnectionExtenders.extenders.include?(:postgresql).should be_true
+    expect(ConnectionExtenders.extenders.include?(:postgresql)).to be_truthy
   end
 
   it "register should register a new connection extender" do
     ConnectionExtenders.register(:bla => :blub)
 
-    ConnectionExtenders.extenders.include?(:bla).should be_true
+    expect(ConnectionExtenders.extenders.include?(:bla)).to be_truthy
   end
 
   it "register should replace already existing connection extenders" do
     ConnectionExtenders.register(:bla => :blub)
     ConnectionExtenders.register(:bla => :blub2)
 
-    ConnectionExtenders.extenders[:bla].should == :blub2
+    expect(ConnectionExtenders.extenders[:bla]).to eq(:blub2)
   end
 
   it "initialize should establish the database connections" do
@@ -71,13 +71,13 @@ describe ConnectionExtenders, "Registration" do
   it "db_connect created connections should be alive" do
     connection = ConnectionExtenders.db_connect Initializer.configuration.left
 
-    connection.should be_active
+    expect(connection).to be_active
   end
 
   it "db_connect should include the connection extender into connection" do
     connection = ConnectionExtenders.db_connect Initializer.configuration.left
 
-    connection.should respond_to(:primary_key_names)
+    expect(connection).to respond_to(:primary_key_names)
   end
 
   it "db_connect should raise an Exception if no fitting connection extender is available" do
@@ -90,7 +90,7 @@ describe ConnectionExtenders, "Registration" do
 
       config.left[:adapter] = 'dummy'
 
-      lambda {ConnectionExtenders.db_connect  config.left}.should raise_error(RuntimeError, /dummy/)
+      expect {ConnectionExtenders.db_connect  config.left}.to raise_error(RuntimeError, /dummy/)
     end
   end
 
@@ -98,8 +98,8 @@ describe ConnectionExtenders, "Registration" do
     ConnectionExtenders.use_db_connection_cache :first_status
     first_status = ConnectionExtenders.use_db_connection_cache :second_status
     second_status = ConnectionExtenders.use_db_connection_cache :whatever
-    first_status.should == :first_status
-    second_status.should == :second_status
+    expect(first_status).to eq(:first_status)
+    expect(second_status).to eq(:second_status)
   end
 
   it "clear_db_connection_cache should clear the connection cache" do
@@ -107,7 +107,7 @@ describe ConnectionExtenders, "Registration" do
     begin
       ConnectionExtenders.connection_cache = :dummy_cache
       ConnectionExtenders.clear_db_connection_cache
-      ConnectionExtenders.connection_cache.should == {}
+      expect(ConnectionExtenders.connection_cache).to eq({})
     ensure
       ConnectionExtenders.connection_cache = old_cache
     end
@@ -119,7 +119,7 @@ describe ConnectionExtenders, "Registration" do
       ConnectionExtenders.clear_db_connection_cache
       ConnectionExtenders.use_db_connection_cache true
       ConnectionExtenders.db_connect Initializer.configuration.left
-      ConnectionExtenders.connection_cache.should_not be_empty
+      expect(ConnectionExtenders.connection_cache).not_to be_empty
     ensure
       ConnectionExtenders.connection_cache = old_cache
     end
@@ -131,7 +131,7 @@ describe ConnectionExtenders, "Registration" do
       ConnectionExtenders.clear_db_connection_cache
       ConnectionExtenders.use_db_connection_cache true
       connection = ConnectionExtenders.db_connect Initializer.configuration.left
-      connection.should_receive(:active?).and_return(:true)
+      expect(connection).to receive(:active?).and_return(:true)
       ConnectionExtenders.db_connect Initializer.configuration.left
     ensure
       ConnectionExtenders.connection_cache = old_cache

@@ -91,35 +91,31 @@ end
 #   * primary_key_names: array of mock primary column names
 #   * column_names: array of mock column names, if nil: doesn't mock this function
 def create_mock_proxy_connection(mock_table, primary_key_names, column_names = nil)
-  session = mock("ProxyConnection")
+  session = double("ProxyConnection")
   if primary_key_names
-    session.should_receive(:primary_key_names) \
+    expect(session).to receive(:primary_key_names) \
       .with(mock_table) \
       .and_return(primary_key_names)
   end
   if column_names
-    session.should_receive(:column_names) \
+    expect(session).to receive(:column_names) \
       .with(mock_table) \
       .and_return(column_names)
   end
-  session.should_receive(:quote_value) \
-    .any_number_of_times \
-    .with(an_instance_of(String), an_instance_of(String), anything) \
-    .and_return { |table, column, value| value}
+  allow(session).to receive(:quote_value) \
+     \
+    .with(an_instance_of(String), an_instance_of(String), anything) { |table, column, value| value}
 
-  session.should_receive(:connection) \
-    .any_number_of_times \
-    .and_return {dummy_connection}
+  allow(session).to receive(:connection) \
+     {dummy_connection}
 
-  session.should_receive(:quote_column_name) \
-    .any_number_of_times \
-    .with(an_instance_of(String)) \
-    .and_return { |column_name| "'#{column_name}'" }
+  allow(session).to receive(:quote_column_name) \
+     \
+    .with(an_instance_of(String)) { |column_name| "'#{column_name}'" }
 
-  session.should_receive(:quote_table_name) \
-    .any_number_of_times \
-    .with(an_instance_of(String)) \
-    .and_return { |table_name| "'#{table_name}'" }
+  allow(session).to receive(:quote_table_name) \
+     \
+    .with(an_instance_of(String)) { |table_name| "'#{table_name}'" }
 
   session
 end

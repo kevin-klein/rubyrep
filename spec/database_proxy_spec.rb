@@ -9,7 +9,7 @@ describe DatabaseProxy do
 
   it "initialize should create an empty session regiser" do
     proxy =  DatabaseProxy.new
-    proxy.session_register.should == {}
+    expect(proxy.session_register).to eq({})
   end
 
   def create_proxy_and_session
@@ -21,27 +21,27 @@ describe DatabaseProxy do
   it "create_session should register the created session" do
     proxy, session = create_proxy_and_session
 
-    session.should be_an_instance_of(ProxyConnection)
-    proxy.session_register.include?(session).should == true
+    expect(session).to be_an_instance_of(ProxyConnection)
+    expect(proxy.session_register.include?(session)).to eq(true)
   end
 
   it "destroy_session should destroy and unregister the session" do
     proxy, session = create_proxy_and_session
-    session.should_receive(:destroy)
+    expect(session).to receive(:destroy)
     
     proxy.destroy_session session
 
-    proxy.session_register.include?(session).should == false
+    expect(proxy.session_register.include?(session)).to eq(false)
   end
   
   it "ping should respond with 'pong'" do
     proxy = DatabaseProxy.new
-    proxy.ping.should == 'pong' 
+    expect(proxy.ping).to eq('pong') 
   end
   
   it "terminate should exit the proxy" do
     proxy = DatabaseProxy.new
-    Thread.main.should_receive(:raise).with(SystemExit)
+    expect(Thread.main).to receive(:raise).with(SystemExit)
     
     proxy.terminate!
   end

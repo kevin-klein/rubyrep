@@ -18,13 +18,13 @@ describe TableSorter do
     sorted_tables = sorter.sort
 
     # make sure it contains the original tables
-    sorted_tables.sort.should == tables.sort
+    expect(sorted_tables.sort).to eq(tables.sort)
 
     # make sure the referenced table comes before the referencing table
-    sorted_tables.grep(/referenc/).should == ['referenced_table', 'referencing_table']
+    expect(sorted_tables.grep(/referenc/)).to eq(['referenced_table', 'referencing_table'])
 
     # verify that we are using TSort#tsort to get that result
-    sorter.should_not_receive(:tsort)
+    expect(sorter).not_to receive(:tsort)
     sorter.sort
   end
 end

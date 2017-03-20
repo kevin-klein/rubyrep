@@ -10,13 +10,13 @@ describe TriggerModeSwitcher do
   it "initialize should save the session and initialize triggers hash" do
     session = Session.new
     switcher = TriggerModeSwitcher.new(session)
-    switcher.session.should == session
+    expect(switcher.session).to eq(session)
   end
 
   it "exclude_rr_activity should switch the trigger for the given table" do
     switcher = TriggerModeSwitcher.new(Session.new)
 
-    switcher.should_receive(:switch_trigger_mode).with(:right, 'right1', true).once
+    expect(switcher).to receive(:switch_trigger_mode).with(:right, 'right1', true).once
     switcher.exclude_rr_activity(:right, 'right1')
 
     # Verify that for a given table, the trigger is not modified multiple times
@@ -26,9 +26,9 @@ describe TriggerModeSwitcher do
   it "restore_triggers should restore the triggers" do
     switcher = TriggerModeSwitcher.new(Session.new)
 
-    switcher.stub!(:switch_trigger_mode)
+    allow(switcher).to receive(:switch_trigger_mode)
     switcher.exclude_rr_activity :left, 'left1'
-    switcher.should_receive(:switch_trigger_mode).with(:left, 'left1', false).once
+    expect(switcher).to receive(:switch_trigger_mode).with(:left, 'left1', false).once
     switcher.restore_triggers
     switcher.restore_triggers # ensure the restore is only done once
   end
@@ -77,7 +77,7 @@ describe TriggerModeSwitcher do
   it "switch_trigger_mode should not switch the trigger mode if the table has no trigger" do
     session = Session.new
     switcher = TriggerModeSwitcher.new session
-    session.left.should_not_receive(:execute)
+    expect(session.left).not_to receive(:execute)
     switcher.switch_trigger_mode(:left, 'scanner_records', true)
   end
 end

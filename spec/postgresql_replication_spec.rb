@@ -30,12 +30,12 @@ shared_examples_for "PostgreSQLReplication" do
       row = session.left.select_one("select * from rr_pending_changes")
       row.delete 'id'
       row.delete 'change_time'
-      row.should == {
+      expect(row).to eq({
         'change_table' => 'trigger_test',
         'change_key' => 'first_id|1|second_id|2',
         'change_new_key' => nil,
         'change_type' => 'I'
-      }
+      })
 
     ensure
       session.left.execute('delete from rr_pending_changes')

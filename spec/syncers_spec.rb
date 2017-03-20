@@ -13,12 +13,12 @@ describe Syncers do
 
   it 'syncers should return empty hash if nil' do
     Syncers.instance_variable_set :@syncers, nil
-    Syncers.syncers.should == {}
+    expect(Syncers.syncers).to eq({})
   end
 
   it 'syncers should return the registered syncers' do
     Syncers.instance_variable_set :@syncers, :dummy_data
-    Syncers.syncers.should == :dummy_data
+    expect(Syncers.syncers).to eq(:dummy_data)
   end
 
   it 'configured_syncer should return the correct syncer as per :syncer option, if both :syncer and :replicator is configured' do
@@ -26,20 +26,20 @@ describe Syncers do
       syncer: :two_way,
       replicator: :key2
     }
-    Syncers.configured_syncer(options).should == Syncers::TwoWaySyncer
+    expect(Syncers.configured_syncer(options)).to eq(Syncers::TwoWaySyncer)
   end
 
   it 'configured_syncer should return the correct syncer as per :replicator option if no :syncer option is provided' do
     options = { replicator: :two_way }
-    Syncers.configured_syncer(options).should == Syncers::TwoWaySyncer
+    expect(Syncers.configured_syncer(options)).to eq(Syncers::TwoWaySyncer)
   end
 
   it 'register should register the provided commiter' do
     Syncers.instance_variable_set :@syncers, nil
     Syncers.register a_key: :a
     Syncers.register b_key: :b
-    Syncers.syncers[:a_key].should == :a
-    Syncers.syncers[:b_key].should == :b
+    expect(Syncers.syncers[:a_key]).to eq(:a)
+    expect(Syncers.syncers[:b_key]).to eq(:b)
   end
 end
 
@@ -49,14 +49,14 @@ describe Syncers::OneWaySyncer do
   end
 
   it 'should register itself' do
-    Syncers.syncers[:one_way].should == Syncers::OneWaySyncer
+    expect(Syncers.syncers[:one_way]).to eq(Syncers::OneWaySyncer)
   end
 
   it 'initialize should store sync_helper' do
     sync = TableSync.new(Session.new, 'scanner_records')
     helper = SyncHelper.new(sync)
     syncer = Syncers::OneWaySyncer.new(helper)
-    syncer.sync_helper.should == helper
+    expect(syncer.sync_helper).to eq(helper)
   end
 
   it 'initialize should calculate course source, target and source_record_index' do
@@ -64,83 +64,83 @@ describe Syncers::OneWaySyncer do
     helper = SyncHelper.new(sync)
 
     # verify correct behaviour if syncing to the left
-    helper.stub!(:sync_options).and_return(direction: :left, sync_conflict_handling: :right_wins, logged_sync_events: :all_changes, right_record_handling: :insert, left_record_handling: :insert)
+    allow(helper).to receive(:sync_options).and_return(direction: :left, sync_conflict_handling: :right_wins, logged_sync_events: :all_changes, right_record_handling: :insert, left_record_handling: :insert)
     syncer = Syncers::OneWaySyncer.new(helper)
   end
 
   it 'default_option should return the correct default options' do
-    Syncers::OneWaySyncer.default_options.should == { left_record_handling: :insert, right_record_handling: :insert, sync_conflict_handling: :ignore, logged_sync_events: [:ignored_conflicts] }
+    expect(Syncers::OneWaySyncer.default_options).to eq({ left_record_handling: :insert, right_record_handling: :insert, sync_conflict_handling: :ignore, logged_sync_events: [:ignored_conflicts] })
   end
 
   it 'sync_difference should delete in the right database' do
     sync = TableSync.new(Session.new, 'scanner_records')
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(rep_prefix: 'rr', direction: :left, sync_conflict_handling: :right_wins, logged_sync_events: :all_changes, right_record_handling: :insert, left_record_handling: :insert)
+    allow(helper).to receive(:sync_options).and_return(rep_prefix: 'rr', direction: :left, sync_conflict_handling: :right_wins, logged_sync_events: :all_changes, right_record_handling: :insert, left_record_handling: :insert)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_receive(:delete_record).with(:left, 'scanner_records', :dummy_record)
-    helper.should_not_receive(:update_record)
+    expect(helper).to receive(:delete_record).with(:left, 'scanner_records', :dummy_record)
+    expect(helper).not_to receive(:update_record)
     syncer.sync_difference(:left, :dummy_record)
 
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(direction: :right, delete: true)
+    allow(helper).to receive(:sync_options).and_return(direction: :right, delete: true)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_receive(:delete_record).with(:right, 'scanner_records', :dummy_record)
+    expect(helper).to receive(:delete_record).with(:right, 'scanner_records', :dummy_record)
     syncer.sync_difference(:right, :dummy_record)
   end
 
   it 'sync_difference should not insert if :insert option is not true' do
     sync = TableSync.new(Session.new, 'scanner_records')
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(direction: :left, insert: false)
+    allow(helper).to receive(:sync_options).and_return(direction: :left, insert: false)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_not_receive(:delete_record)
-    helper.should_not_receive(:update_record)
-    helper.should_not_receive(:insert_record)
+    expect(helper).not_to receive(:delete_record)
+    expect(helper).not_to receive(:update_record)
+    expect(helper).not_to receive(:insert_record)
     syncer.sync_difference(:right, :dummy_record)
   end
 
   it 'sync_difference should insert in the right database' do
     sync = TableSync.new(Session.new, 'scanner_records')
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(direction: :left, insert: true)
+    allow(helper).to receive(:sync_options).and_return(direction: :left, insert: true)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_not_receive(:delete_record)
-    helper.should_not_receive(:update_record)
-    helper.should_receive(:insert_record).with(:left, 'scanner_records', :dummy_record)
+    expect(helper).not_to receive(:delete_record)
+    expect(helper).not_to receive(:update_record)
+    expect(helper).to receive(:insert_record).with(:left, 'scanner_records', :dummy_record)
     syncer.sync_difference(:right, :dummy_record)
 
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(direction: :right, insert: true)
+    allow(helper).to receive(:sync_options).and_return(direction: :right, insert: true)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_receive(:insert_record).with(:right, 'scanner_records', :dummy_record)
+    expect(helper).to receive(:insert_record).with(:right, 'scanner_records', :dummy_record)
     syncer.sync_difference(:left, :dummy_record)
   end
 
   it 'sync_difference should not update if :update option is not true' do
     sync = TableSync.new(Session.new, 'scanner_records')
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(direction: :left, update: false)
+    allow(helper).to receive(:sync_options).and_return(direction: :left, update: false)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_not_receive(:delete_record)
-    helper.should_not_receive(:update_record)
-    helper.should_not_receive(:insert_record)
+    expect(helper).not_to receive(:delete_record)
+    expect(helper).not_to receive(:update_record)
+    expect(helper).not_to receive(:insert_record)
     syncer.sync_difference(:conflict, :dummy_records)
   end
 
   it 'sync_difference should update the right values in the right database' do
     sync = TableSync.new(Session.new, 'scanner_records')
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(direction: :left, update: true)
+    allow(helper).to receive(:sync_options).and_return(direction: :left, update: true)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_not_receive(:delete_record)
-    helper.should_receive(:update_record).with(:left, 'scanner_records', :right_record)
-    helper.should_not_receive(:insert_record)
+    expect(helper).not_to receive(:delete_record)
+    expect(helper).to receive(:update_record).with(:left, 'scanner_records', :right_record)
+    expect(helper).not_to receive(:insert_record)
     syncer.sync_difference(:conflict, [:left_record, :right_record])
 
     helper = SyncHelper.new(sync)
-    helper.stub!(:sync_options).and_return(direction: :right, update: true)
+    allow(helper).to receive(:sync_options).and_return(direction: :right, update: true)
     syncer = Syncers::OneWaySyncer.new(helper)
-    helper.should_receive(:update_record).with(:right, 'scanner_records', :left_record)
+    expect(helper).to receive(:update_record).with(:right, 'scanner_records', :left_record)
     syncer.sync_difference(:conflict, [:left_record, :right_record])
   end
 end

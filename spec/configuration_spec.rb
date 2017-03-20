@@ -8,20 +8,20 @@ describe Configuration do
 
   it "initialize should set #left and #right to empty hashes" do
     config = Configuration.new
-    config.left.should == {}
-    config.right.should == {}
+    expect(config.left).to eq({})
+    expect(config.right).to eq({})
   end
   
   it "initialize should set #options to the default options" do
     config = Configuration.new
-    config.options.should == Configuration::DEFAULT_OPTIONS
+    expect(config.options).to eq(Configuration::DEFAULT_OPTIONS)
   end
 
   it "options= should merge the provided into the existing options" do
     config = Configuration.new
     config.options = {:bla => :bla}
     config.options = {:bla => :blub}
-    config.options[:bla].should == :blub
+    expect(config.options[:bla]).to eq(:blub)
   end
 
   it "each_matching_option should yield if general option matches" do
@@ -29,7 +29,7 @@ describe Configuration do
     config.options = {:bla => :blub}
     yielded = []
     config.each_matching_option(:bla) {|spec, value| yielded << [spec, value]}
-    yielded.should == [[nil, :blub]]
+    expect(yielded).to eq([[nil, :blub]])
   end
 
   it "each_matching_option should yield if table specific options match" do
@@ -40,11 +40,11 @@ describe Configuration do
     config.add_table_options 't3', :a => 4
     yielded = []
     config.each_matching_option(:a) {|spec, value| yielded << [spec, value]}
-    yielded.should == [
+    expect(yielded).to eq([
       [nil,  1],
       ['t1', 2],
       ['t3', 4]
-    ]
+    ])
   end
 
   it "each_matching_option should not yield unmatching options" do
@@ -53,15 +53,16 @@ describe Configuration do
     config.add_table_options 'dummy_table', :b => :blub
     yielded = []
     config.each_matching_option(:c) {|spec, value| yielded << [spec, value]}
-    yielded.should == []
+    expect(yielded).to eq([])
   end
 
   it "options_for_table should return the general options if there are no table specific options at all" do
     config = Configuration.new
-    config.options_for_table('b').should == \
+    expect(config.options_for_table('b')).to eq( \
       Syncers::TwoWaySyncer.default_options.clone.
       merge(Replicators::TwoWayReplicator.default_options.clone).
       merge(config.options)
+    )
   end
 
   it "included_table_specs should return the list of included table specifications" do
@@ -69,47 +70,47 @@ describe Configuration do
     config.include_tables('a', {:bla => :blub})
     config.include_tables('a, b')
     config.include_tables(/a/)
-    config.included_table_specs.should == ['a', 'a, b', /a/]
+    expect(config.included_table_specs).to eq(['a', 'a, b', /a/])
   end
 
   it "included_table_specs should save the options if provided" do
     config = Configuration.new
     config.include_tables('a', {:bla => :blub})
-    config.options_for_table('a')[:bla].should == :blub
+    expect(config.options_for_table('a')[:bla]).to eq(:blub)
   end
 
   it "include_tables should include the specified table specs" do
     config = Configuration.new
     config.include_tables('a')
     config.include_tables(/b/)
-    config.included_table_specs.include?('a').should be_true
-    config.included_table_specs.include?(/b/).should be_true
+    expect(config.included_table_specs.include?('a')).to be_truthy
+    expect(config.included_table_specs.include?(/b/)).to be_truthy
   end
 
   it "include_table should alias to include_tables" do
     config = Configuration.new
     config.include_table('a')
-    config.included_table_specs.include?('a').should be_true
+    expect(config.included_table_specs.include?('a')).to be_truthy
   end
 
   it "exclude_tables should exclude the specified table specs" do
     config = Configuration.new
     config.exclude_tables('a')
     config.exclude_tables(/b/)
-    config.excluded_table_specs.include?('a').should be_true
-    config.excluded_table_specs.include?(/b/).should be_true
+    expect(config.excluded_table_specs.include?('a')).to be_truthy
+    expect(config.excluded_table_specs.include?(/b/)).to be_truthy
   end
 
   it "exclude_table should alias to exclude_tables" do
     config = Configuration.new
     config.exclude_table('a')
-    config.excluded_table_specs.include?('a').should be_true
+    expect(config.excluded_table_specs.include?('a')).to be_truthy
   end
 
   it "exclude_rubyrep_tables should exclude the rubyrep infrastructure tables" do
     config = Configuration.new
     config.exclude_rubyrep_tables
-    config.excluded_table_specs.include?(/^rr_.*/).should be_true
+    expect(config.excluded_table_specs.include?(/^rr_.*/)).to be_truthy
   end
 
   it "excluded_table_specs should return the list of excluded table specifications" do
@@ -117,26 +118,28 @@ describe Configuration do
     config.exclude_tables('a')
     config.exclude_tables('a, b')
     config.exclude_tables(/a/)
-    config.excluded_table_specs.should == ['a', 'a, b', /a/]
+    expect(config.excluded_table_specs).to eq(['a', 'a, b', /a/])
   end
 
   it "options_for_table should return the general options if there are no matching table specific options" do
     config = Configuration.new
     config.include_tables(/a/, {:bla => :blub})
-    config.options_for_table('b').should == \
+    expect(config.options_for_table('b')).to eq( \
       Syncers::TwoWaySyncer.default_options.clone.
       merge(Replicators::TwoWayReplicator.default_options.clone).
       merge(config.options)
+    )
   end
 
   it "options_for_table should return table specific options mixed in with default options" do
     config = Configuration.new
     config.include_tables(/a/, {:bla => :blub})
-    config.options_for_table('a').should == \
+    expect(config.options_for_table('a')).to eq( \
       Syncers::TwoWaySyncer.default_options.clone.
       merge(Replicators::TwoWayReplicator.default_options.clone).
       merge(config.options).
       merge(:bla => :blub)
+    )
   end
 
   it "options_for_table should return last added version of added options for matching table spec" do
@@ -145,46 +148,48 @@ describe Configuration do
     config.include_tables('a', {:bla => :blok})
     config.include_tables(/x/, {:bla => :bar})
     config.include_tables('y', {:bla => :foo})
-    config.options_for_table('a').should == \
+    expect(config.options_for_table('a')).to eq( \
       Syncers::TwoWaySyncer.default_options.clone.
       merge(Replicators::TwoWayReplicator.default_options.clone).
       merge(config.options).
       merge(:bla => :blok)
+    )
   end
 
   it "options_for_table should match against table pair specs" do
     config = Configuration.new
     config.add_table_options('a, b', {:bla => :blub})
-    config.options_for_table('a')[:bla].should == :blub
+    expect(config.options_for_table('a')[:bla]).to eq(:blub)
   end
 
   it "options_for_table should match against regular expression specs" do
     config = Configuration.new
     config.add_table_options(/a/, {:bla => :blub})
-    config.options_for_table('a')[:bla].should == :blub
+    expect(config.options_for_table('a')[:bla]).to eq(:blub)
   end
 
   it "options_for_table should match against pure table name specs" do
     config = Configuration.new
     config.add_table_options('a', {:bla => :blub})
-    config.options_for_table('a')[:bla].should == :blub
+    expect(config.options_for_table('a')[:bla]).to eq(:blub)
   end
 
   it "add_table_options should not create table_spec duplicates" do
     config = Configuration.new
     config.add_table_options(/a/, {:bla => :blub})
     config.add_table_options(/a/, {:foo => :bar})
-    config.options_for_table('a').should == \
+    expect(config.options_for_table('a')).to eq( \
       Syncers::TwoWaySyncer.default_options.clone.
       merge(Replicators::TwoWayReplicator.default_options.clone).
       merge(config.options).
       merge(:bla => :blub, :foo => :bar)
+    )
   end
 
   it "add_table_option should alias to add_table_options" do
     config = Configuration.new
     config.add_table_option(/a/, {:bla => :blub})
-    config.options_for_table('a')[:bla].should == :blub
+    expect(config.options_for_table('a')[:bla]).to eq(:blub)
   end
 
   it "add_table_options should include default syncer options" do
@@ -196,8 +201,8 @@ describe Configuration do
 
     options = config.options_for_table('a')
     Syncers::OneWaySyncer.default_options.each do |key, value|
-      options[key].should == value unless key == :delete
+      expect(options[key]).to eq(value) unless key == :delete
     end
-    options[:delete].should == true
+    expect(options[:delete]).to eq(true)
   end
 end

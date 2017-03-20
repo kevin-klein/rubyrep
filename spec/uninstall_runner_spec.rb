@@ -7,45 +7,45 @@ describe UninstallRunner do
   end
 
   it "should register itself with CommandRunner" do
-    CommandRunner.commands['uninstall'][:command].should == UninstallRunner
-    CommandRunner.commands['uninstall'][:description].should be_an_instance_of(String)
+    expect(CommandRunner.commands['uninstall'][:command]).to eq(UninstallRunner)
+    expect(CommandRunner.commands['uninstall'][:description]).to be_an_instance_of(String)
   end
 
   it "process_options should make options as nil and teturn status as 1 if command line parameters are unknown" do
     # also verify that an error message is printed
-    $stderr.should_receive(:puts).any_number_of_times
+    allow($stderr).to receive(:puts)
     runner = UninstallRunner.new
     status = runner.process_options ["--nonsense"]
-    runner.options.should == nil
-    status.should == 1
+    expect(runner.options).to eq(nil)
+    expect(status).to eq(1)
   end
 
   it "process_options should make options as nil and return status as 1 if config option is not given" do
     # also verify that an error message is printed
-    $stderr.should_receive(:puts).any_number_of_times
+    allow($stderr).to receive(:puts)
     runner = UninstallRunner.new
     status = runner.process_options []
-    runner.options.should == nil
-    status.should == 1
+    expect(runner.options).to eq(nil)
+    expect(status).to eq(1)
   end
 
   it "process_options should make options as nil and return status as 0 if command line includes '--help'" do
     # also verify that the help message is printed
-    $stderr.should_receive(:puts)
+    expect($stderr).to receive(:puts)
     runner = UninstallRunner.new
     status = runner.process_options ["--help"]
-    runner.options.should == nil
-    status.should == 0
+    expect(runner.options).to eq(nil)
+    expect(status).to eq(0)
   end
 
   it "process_options should set the correct options" do
     runner = UninstallRunner.new
     runner.process_options ["-c", "config_path"]
-    runner.options[:config_file].should == 'config_path'
+    expect(runner.options[:config_file]).to eq('config_path')
   end
 
   it "run should not start an uninstall if the command line is invalid" do
-    $stderr.should_receive(:puts).any_number_of_times
+    allow($stderr).to receive(:puts)
     UninstallRunner.any_instance_should_not_receive(:execute) {
       UninstallRunner.run(["--nonsense"])
     }
@@ -60,8 +60,8 @@ describe UninstallRunner do
   it "session should create and return the session" do
     runner = UninstallRunner.new
     runner.options = {:config_file => "config/test_config.rb"}
-    runner.session.should be_an_instance_of(Session)
-    runner.session.should == runner.session # should only be created one time
+    expect(runner.session).to be_an_instance_of(Session)
+    expect(runner.session).to eq(runner.session) # should only be created one time
   end
 
   it "execute should uninstall all rubyrep elements" do
@@ -76,14 +76,14 @@ describe UninstallRunner do
       initializer.create_trigger :left, 'scanner_records'
 
       runner = UninstallRunner.new
-      runner.stub!(:session).and_return(session)
+      allow(runner).to receive(:session).and_return(session)
 
       runner.execute
 
-      initializer.trigger_exists?(:left, 'scanner_records').should be_false
-      initializer.change_log_exists?(:left).should be_false
-      session.right.tables.include?('rx_running_flags').should be_false
-      initializer.event_log_exists?.should be_false
+      expect(initializer.trigger_exists?(:left, 'scanner_records')).to be_falsey
+      expect(initializer.change_log_exists?(:left)).to be_falsey
+      expect(session.right.tables.include?('rx_running_flags')).to be_falsey
+      expect(initializer.event_log_exists?).to be_falsey
 
       $stdout.string =~ /uninstall completed/i
     ensure

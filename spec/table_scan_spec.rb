@@ -9,20 +9,20 @@ describe TableScan do
 
   it "initialize should raise exception if table doesn't have primary keys" do
     session = Session.new
-    lambda {TableScan.new session, 'extender_without_key'} \
-      .should raise_error(RuntimeError, /.*extender_without_key.*primary key/)
+    expect {TableScan.new session, 'extender_without_key'} \
+      .to raise_error(RuntimeError, /.*extender_without_key.*primary key/)
   end
 
   it "initialize should cache the primary keys of the given table" do
     session = Session.new
     scann = TableScan.new session, 'scanner_records'
-    scann.primary_key_names.should == ['id']
+    expect(scann.primary_key_names).to eq(['id'])
   end
 
   it "initialize should use the name of the left table as overwritable default for right table" do
     session = Session.new
-    TableScan.new(session, 'scanner_records').right_table.should == 'scanner_records'
-    TableScan.new(session, 'scanner_records', 'dummy').right_table.should == 'dummy'
+    expect(TableScan.new(session, 'scanner_records').right_table).to eq('scanner_records')
+    expect(TableScan.new(session, 'scanner_records', 'dummy').right_table).to eq('dummy')
   end
 
   it "progress_printer= should store the progress printer class" do

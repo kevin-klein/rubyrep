@@ -12,7 +12,7 @@ describe ReplicationDifference do
     session = Session.new
     loaders = LoggedChangeLoaders.new session
     diff = ReplicationDifference.new loaders
-    diff.loaders.should == loaders
+    expect(diff.loaders).to eq(loaders)
   end
 
   it "load should load left differences successfully" do
@@ -30,9 +30,9 @@ describe ReplicationDifference do
       diff = ReplicationDifference.new LoggedChangeLoaders.new(session)
       diff.load
 
-      diff.should be_loaded
-      diff.type.should == :left
-      diff.changes[:left].key.should == {'id' => '1'}
+      expect(diff).to be_loaded
+      expect(diff.type).to eq(:left)
+      expect(diff.changes[:left].key).to eq({'id' => '1'})
     ensure
       session.left.execute('delete from rr_pending_changes')
     end
@@ -50,9 +50,9 @@ describe ReplicationDifference do
       diff = ReplicationDifference.new LoggedChangeLoaders.new(session)
       diff.load
 
-      diff.should be_loaded
-      diff.type.should == :right
-      diff.changes[:right].key.should == {'id' => '1'}
+      expect(diff).to be_loaded
+      expect(diff.type).to eq(:right)
+      expect(diff.changes[:right].key).to eq({'id' => '1'})
     ensure
       session.right.execute('delete from rr_pending_changes')
     end
@@ -96,14 +96,14 @@ describe ReplicationDifference do
       diff = ReplicationDifference.new LoggedChangeLoaders.new(session)
       diff.load
 
-      diff.should be_loaded
-      diff.type.should == :conflict
-      diff.changes[:left].type.should == :update
-      diff.changes[:left].table.should == 'scanner_records'
-      diff.changes[:left].key.should == {'id' => '2'}
-      diff.changes[:right].type.should == :delete
-      diff.changes[:right].table.should == 'scanner_records'
-      diff.changes[:right].key.should == {'id' => '2'}
+      expect(diff).to be_loaded
+      expect(diff.type).to eq(:conflict)
+      expect(diff.changes[:left].type).to eq(:update)
+      expect(diff.changes[:left].table).to eq('scanner_records')
+      expect(diff.changes[:left].key).to eq({'id' => '2'})
+      expect(diff.changes[:right].type).to eq(:delete)
+      expect(diff.changes[:right].table).to eq('scanner_records')
+      expect(diff.changes[:right].key).to eq({'id' => '2'})
     ensure
       session.left.execute('delete from rr_pending_changes')
       session.right.execute('delete from rr_pending_changes')
@@ -125,14 +125,14 @@ describe ReplicationDifference do
       diff = ReplicationDifference.new LoggedChangeLoaders.new(session)
       diff.load
 
-      diff.should be_loaded
-      diff.type.should == :right
-      diff.changes[:right].key.should == {'id' => '1'}
+      expect(diff).to be_loaded
+      expect(diff.type).to eq(:right)
+      expect(diff.changes[:right].key).to eq({'id' => '1'})
 
       # if there are no changes, the diff should still be the same
       diff.amend
-      diff.type.should == :right
-      diff.changes[:right].key.should == {'id' => '1'}
+      expect(diff.type).to eq(:right)
+      expect(diff.changes[:right].key).to eq({'id' => '1'})
 
       # should recognize new changes
       session.left.insert_record 'rr_pending_changes', {
@@ -142,9 +142,9 @@ describe ReplicationDifference do
         'change_time' => Time.now
       }
       diff.amend
-      diff.type.should == :conflict
-      diff.changes[:left].key.should == {'id' => '1'}
-      diff.changes[:right].key.should == {'id' => '1'}
+      expect(diff.type).to eq(:conflict)
+      expect(diff.changes[:left].key).to eq({'id' => '1'})
+      expect(diff.changes[:right].key).to eq({'id' => '1'})
     ensure
       session.left.execute('delete from rr_pending_changes')
       session.right.execute('delete from rr_pending_changes')
@@ -153,6 +153,6 @@ describe ReplicationDifference do
 
   it "to_yaml should blank out session" do
     diff = ReplicationDifference.new :dummy_session
-    diff.to_yaml.should_not =~ /session:/
+    expect(diff.to_yaml).not_to match(/session:/)
   end
 end

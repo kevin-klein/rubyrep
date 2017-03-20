@@ -14,7 +14,7 @@ shared_examples_for 'ConnectionExtender' do
   it 'referenced_tables should return those tables without primary key' do
     session = Session.new
     referenced_tables = session.left.referenced_tables(['table_with_manual_key'])
-    referenced_tables.should == { 'table_with_manual_key' => [] }
+    expect(referenced_tables).to eq({ 'table_with_manual_key' => [] })
   end
 
   it 'select_cursor should handle zero result queries' do
@@ -22,7 +22,7 @@ shared_examples_for 'ConnectionExtender' do
       session = Session.new
       session.left.execute('delete from extender_no_record')
       result = session.left.select_cursor table: 'extender_no_record'
-      result.next?.should be_false
+      expect(result.next?).to be_falsey
     ensure
 
     end
@@ -43,7 +43,7 @@ shared_examples_for 'ConnectionExtender' do
       result = session.left.select_cursor(table: 'scanner_records', row_buffer_size: 2)
       result.next_row
       result.next_row
-      result.next_row['id'].should == '5'
+      expect(result.next_row['id']).to eq('5')
       result.clear
     ensure
       session.left.execute('delete from scanner_records')
@@ -57,8 +57,8 @@ shared_examples_for 'ConnectionExtender' do
       session.left.insert_record('extender_one_record', id: 1,
                                                         name: 'Alice')
       result = session.left.select_cursor table: 'extender_one_record'
-      result.next?.should be_true
-      result.next_row.should == { 'id' => '1', 'name' => 'Alice' }
+      expect(result.next?).to be_truthy
+      expect(result.next_row).to eq({ 'id' => '1', 'name' => 'Alice' })
     ensure
       session.left.execute('delete from extender_one_record')
     end
@@ -67,7 +67,7 @@ shared_examples_for 'ConnectionExtender' do
   it 'select_cursor next_row should raise if there are no records' do
     session = Session.new
     result = session.left.select_cursor table: 'extender_no_record'
-    -> { result.next_row }.should raise_error(RuntimeError, 'no more rows available')
+    expect { result.next_row }.to raise_error(RuntimeError, 'no more rows available')
   end
 
   it 'should read and write binary data correctly' do
@@ -83,10 +83,10 @@ shared_examples_for 'ConnectionExtender' do
         table: 'extender_type_check',
         row_keys: ['id' => 6]
       )['binary_test']
-      Digest::MD5.hexdigest(result_data).should == Digest::MD5.hexdigest(org_data)
+      expect(Digest::MD5.hexdigest(result_data)).to eq(Digest::MD5.hexdigest(org_data))
     ensure
       session.left.execute('delete from extender_type_check')
     end
-    result_data.force_encoding('BINARY').should == org_data.force_encoding('BINARY')
+    expect(result_data.force_encoding('BINARY')).to eq(org_data.force_encoding('BINARY'))
   end
 end

@@ -5,17 +5,17 @@ include RR
 describe ScanReportPrinters::ScanDetailReporter do
   before(:each) do
     Initializer.configuration = standard_config
-    $stdout.should_receive(:puts).any_number_of_times
+    allow($stdout).to receive(:puts)
   end
 
   it "should register itself with ScanRunner" do
-    RR::ScanReportPrinters.printers.any? do |printer|
+    expect(RR::ScanReportPrinters.printers.any? do |printer|
       printer[:printer_class] == ScanReportPrinters::ScanDetailReporter
-    end.should be_true
+    end).to be_truthy
   end
   
   it "initialize should store the provided session" do
-    ScanReportPrinters::ScanDetailReporter.new(:dummy_session, nil).session.should == :dummy_session
+    expect(ScanReportPrinters::ScanDetailReporter.new(:dummy_session, nil).session).to eq(:dummy_session)
   end
   
   it "scan should print the summary and the dump of the differences if mode = 'full'" do
@@ -34,7 +34,7 @@ describe ScanReportPrinters::ScanDetailReporter do
       end
       
       # verify summary
-      $stdout.string.should =~ /left_table \/ right_table [\.\s]*3\n/
+      expect($stdout.string).to match(/left_table \/ right_table [\.\s]*3\n/)
 
       # verify dump
       io = StringIO.new($stdout.string.gsub(/^.*left_table.*$/, ''))
@@ -42,11 +42,11 @@ describe ScanReportPrinters::ScanDetailReporter do
       YAML.load_documents(io) do |yl|
         dump_objects << yl
       end
-      dump_objects.should == [
+      expect(dump_objects).to eq([
         {:conflict=>:dummy_row},
         {:left=>:dummy_row},
         {:right=>:dummy_row}
-      ]
+      ])
     ensure 
       $stdout = org_stdout
     end
@@ -73,11 +73,11 @@ describe ScanReportPrinters::ScanDetailReporter do
       YAML.load_documents(io) do |yl|
         dump_objects << yl
       end
-      dump_objects.should == [
+      expect(dump_objects).to eq([
         {:conflict=>{"id"=>1}},
         {:left=>{"id"=>2}},
         {:right=>{"id"=>3}}
-      ]
+      ])
     ensure
       $stdout = org_stdout
     end
@@ -107,11 +107,11 @@ describe ScanReportPrinters::ScanDetailReporter do
       YAML.load_documents(io) do |yl|
         dump_objects << yl
       end
-      dump_objects.should == [
+      expect(dump_objects).to eq([
         {:conflict=>[{'id' => 1, 'name' => 'bla'}, {'id' => 1, 'name' => 'blub'}]},
         {:left=>{"name"=>"bla", "id"=>2}},
         {:right=>{"name"=>"blub", "id"=>3}}
-      ]
+      ])
     ensure
       $stdout = org_stdout
     end

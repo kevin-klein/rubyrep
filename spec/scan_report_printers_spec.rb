@@ -10,7 +10,7 @@ describe ScanReportPrinters do
     org_printers = ScanReportPrinters.printers
     begin
       ScanReportPrinters.instance_eval { class_variable_set :@@report_printers, nil }
-      ScanReportPrinters.printers.should == []
+      expect(ScanReportPrinters.printers).to eq([])
     ensure
       ScanReportPrinters.instance_eval { class_variable_set :@@report_printers, org_printers }
     end
@@ -22,14 +22,14 @@ describe ScanReportPrinters do
       ScanReportPrinters.instance_eval { class_variable_set :@@report_printers, nil }
       ScanReportPrinters.register :dummy_printer_class, "-d", "--dummy"
       ScanReportPrinters.register :another_printer_class, "-t"
-      ScanReportPrinters.printers.should == [
+      expect(ScanReportPrinters.printers).to eq([
         { :printer_class => :dummy_printer_class,
           :opts => ["-d", "--dummy"]
         },
         { :printer_class => :another_printer_class,
           :opts => ["-t"]
         }
-      ]
+      ])
     ensure
       ScanReportPrinters.instance_eval { class_variable_set :@@report_printers, org_printers }
     end
@@ -41,11 +41,11 @@ describe ScanReportPrinters do
       ScanReportPrinters.instance_eval { class_variable_set :@@report_printers, nil }
 
       # register a printer class which will not be selected in the command line options
-      printer_x = mock("printer_x")
+      printer_x = double("printer_x")
       ScanReportPrinters.register printer_x, "-x", "--printer_x"
 
       # register a printer class that will be selected in the command line options
-      printer_y = mock("printer_y")
+      printer_y = double("printer_y")
 
       ScanReportPrinters.register printer_y, "-y", "--printer_y[=arg]", "description"
 
@@ -58,8 +58,8 @@ describe ScanReportPrinters do
       end
       parser.parse!(["--printer_y=dummy_arg"])
 
-      selected_printer_class.should == printer_y
-      selected_arg.should == 'dummy_arg'
+      expect(selected_printer_class).to eq(printer_y)
+      expect(selected_arg).to eq('dummy_arg')
     ensure
       ScanReportPrinters.instance_eval { class_variable_set :@@report_printers, org_printers }
     end

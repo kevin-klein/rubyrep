@@ -49,7 +49,7 @@ shared_examples_for "ReplicationExtender" do
       end
 
       rows.each {|row| row.delete 'id'; row.delete 'change_time'}
-      rows.should == [{"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>nil, "change_type"=>"I"}, {"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>"second_id|9", "change_type"=>"U"}]
+      expect(rows).to eq([{"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>nil, "change_type"=>"I"}, {"change_table"=>"trigger_test", "change_key"=>"second_id|2", "change_new_key"=>"second_id|9", "change_type"=>"U"}])
     ensure
       session.left.execute 'delete from trigger_test' if session
       session.left.execute 'delete from rr_pending_changes' if session
@@ -91,7 +91,7 @@ shared_examples_for "ReplicationExtender" do
 
       rows = session.left.connection.select_all("select * from rr_pending_changes order by id").to_hash
       rows.each {|row| row.delete 'id'; row.delete 'change_time'}
-      rows.should == [{"change_table"=>"trigger_test", "change_key"=>"id|101", "change_new_key"=>nil, "change_type"=>"I"}]
+      expect(rows).to eq([{"change_table"=>"trigger_test", "change_key"=>"id|101", "change_new_key"=>nil, "change_type"=>"I"}])
     ensure
       session.left.execute 'delete from trigger_test' if session
       session.left.execute 'delete from rr_pending_changes' if session
@@ -117,12 +117,12 @@ shared_examples_for "ReplicationExtender" do
       }
       rows = session.left.connection.select_all("select * from rr_pending_changes order by id").to_hash
       rows.each {|row| row.delete 'id'; row.delete 'change_time'}
-      rows.should == [{
+      expect(rows).to eq([{
           'change_table' => 'extender_no_record',
           'change_key' => 'id|9',
           'change_new_key' => nil,
           'change_type' => 'I'
-        }]
+        }])
     ensure
       if session
         session.left.execute 'delete from extender_no_record'
@@ -150,16 +150,16 @@ shared_examples_for "ReplicationExtender" do
       }
       rows = session.left.connection.select_all("select * from rr_pending_changes order by id").to_hash
       rows.each {|row| row.delete 'id'; row.delete 'change_time'}
-      rows.should == [{
+      expect(rows).to eq([{
           'change_table' => 'scanner_text_key',
           'change_key' => 'text_id|よろしくお願(ねが)いします yoroshiku onegai shimasu: I humbly ask for your favor.',
           'change_new_key' => nil,
           'change_type' => 'I'
-        }]
+        }])
       found_key = rows[0]['change_key'].sub(/^text_id\|/, '')
-      session.left.
-        select_one("select * from scanner_text_key where text_id = '#{found_key}'").
-        should_not be_nil
+      expect(session.left.
+        select_one("select * from scanner_text_key where text_id = '#{found_key}'")).
+        not_to be_nil
     ensure
       if session
         session.left.execute "delete from scanner_text_key where text_id = 'よろしくお願(ねが)いします yoroshiku onegai shimasu: I humbly ask for your favor.'"
@@ -185,19 +185,19 @@ shared_examples_for "ReplicationExtender" do
       }
       session.left.create_replication_trigger params
 
-      session.left.replication_trigger_exists?('rr_trigger_test', 'trigger_test').
-        should be_true
+      expect(session.left.replication_trigger_exists?('rr_trigger_test', 'trigger_test')).
+        to be_truthy
       session.left.drop_replication_trigger('rr_trigger_test', 'trigger_test')
-      session.left.replication_trigger_exists?('rr_trigger_test', 'trigger_test').
-        should be_false
+      expect(session.left.replication_trigger_exists?('rr_trigger_test', 'trigger_test')).
+        to be_falsey
     ensure
     end
   end
 
   it "sequence_values should return an empty hash if table has no sequences" do
     session = Session.new
-    session.left.sequence_values('rr', 'scanner_text_key').
-      should == {}
+    expect(session.left.sequence_values('rr', 'scanner_text_key')).
+      to eq({})
   end
 
   it "sequence_values should return the correct sequence settings" do
@@ -211,8 +211,8 @@ shared_examples_for "ReplicationExtender" do
         'rr', 'sequence_test', 5, 2,
         left_sequence_values, right_sequence_values, 5
       sequence_value = session.left.sequence_values('rr', 'sequence_test').values[0]
-      sequence_value[:increment].should == 5
-      (sequence_value[:value] % 5).should == 2
+      expect(sequence_value[:increment]).to eq(5)
+      expect(sequence_value[:value] % 5).to eq(2)
     ensure
       session.left.clear_sequence_setup 'rr', 'sequence_test' if session
       session.left.execute "delete from sequence_test" if session
@@ -235,7 +235,7 @@ shared_examples_for "ReplicationExtender" do
         'rr', 'sequence_test', 1, 0,
         left_sequence_values, right_sequence_values, 5
       id1, id2 = get_example_sequence_values(session)
-      (id2 - id1).should == 1
+      expect(id2 - id1).to eq(1)
 
       left_sequence_values = session.left.sequence_values 'rr', 'sequence_test'
       right_sequence_values = session.right.sequence_values 'rr', 'sequence_test'
@@ -243,8 +243,8 @@ shared_examples_for "ReplicationExtender" do
         'rr', 'sequence_test', 5, 2,
         left_sequence_values, right_sequence_values, 5
       id1, id2 = get_example_sequence_values(session)
-      (id2 - id1).should == 5
-      (id1 % 5).should == 2
+      expect(id2 - id1).to eq(5)
+      expect(id1 % 5).to eq(2)
     ensure
       session.left.clear_sequence_setup 'rr', 'sequence_test' if session
       session.left.execute "delete from sequence_test" if session
@@ -263,7 +263,7 @@ shared_examples_for "ReplicationExtender" do
         'rr', 'sequence_test', 2, 0,
         left_sequence_values, right_sequence_values, 5
       id1, id2 = get_example_sequence_values(session)
-      (id2 - id1).should == 2
+      expect(id2 - id1).to eq(2)
     ensure
       session.left.clear_sequence_setup 'rr', 'sequence_test' if session
       session.left.execute "delete from sequence_test" if session
@@ -293,7 +293,7 @@ shared_examples_for "ReplicationExtender" do
         'rr', 'sequence_test', 2, 0,
         left_sequence_values, right_sequence_values, 5
       id1, id2 = get_example_sequence_values(session)
-      (id2 - id1).should == 2
+      expect(id2 - id1).to eq(2)
     ensure
       session.left.clear_sequence_setup 'rr', 'sequence_test' if session
       session.right.clear_sequence_setup 'rr', 'sequence_test' if session
@@ -312,7 +312,7 @@ shared_examples_for "ReplicationExtender" do
         left_sequence_values, right_sequence_values, 5
       session.left.clear_sequence_setup 'rr', 'sequence_test'
       id1, id2 = get_example_sequence_values(session)
-      (id2 - id1).should == 1
+      expect(id2 - id1).to eq(1)
     ensure
       session.left.clear_sequence_setup 'rr', 'sequence_test' if session
       session.left.execute "delete from sequence_test" if session
@@ -333,13 +333,13 @@ shared_examples_for "ReplicationExtender" do
       end
       # should auto generate the primary key if not manually specified
       session.left.insert_record 'big_key_test', {'name' => 'bla'}
-      session.left.select_one("select id from big_key_test where name = 'bla'")['id'].
-        to_i.should > 0
+      expect(session.left.select_one("select id from big_key_test where name = 'bla'")['id'].
+        to_i).to be > 0
 
       # should allow 8 byte values
       session.left.insert_record 'big_key_test', {'id' => 1e18.to_i, 'name' => 'blub'}
-      session.left.select_one("select id from big_key_test where name = 'blub'")['id'].
-        to_i.should == 1e18.to_i
+      expect(session.left.select_one("select id from big_key_test where name = 'blub'")['id'].
+        to_i).to eq(1e18.to_i)
     end
   end
 end

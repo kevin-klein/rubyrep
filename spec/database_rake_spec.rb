@@ -6,14 +6,14 @@ describe "database.rake" do
   end
 
   it "create_database should create a non-existing database" do
-    RR::ConnectionExtenders.should_receive(:db_connect).and_raise("something")
+    expect(RR::ConnectionExtenders).to receive(:db_connect).and_raise("something")
     should_receive("`").with("PGPASSWORD= createdb \"dummy\" -h localhost -U  -E utf8")
 
     create_database :adapter => "postgresql", :database => "dummy"
   end
 
   it "create_database should not try to create existing databases" do
-    RR::ConnectionExtenders.should_receive(:db_connect)
+    expect(RR::ConnectionExtenders).to receive(:db_connect)
     should_receive(:puts).with("database existing_db already exists")
 
     create_database :adapter => 'postgresql', :database => "existing_db"

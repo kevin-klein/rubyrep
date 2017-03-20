@@ -10,16 +10,16 @@ describe LoggedChangeLoaders do
   it "initializers should create both logged change loaders" do
     session = Session.new
     loaders = LoggedChangeLoaders.new(session)
-    loaders[:left].session.should == session
-    loaders[:left].database.should == :left
-    loaders[:right].database.should == :right
+    expect(loaders[:left].session).to eq(session)
+    expect(loaders[:left].database).to eq(:left)
+    expect(loaders[:right].database).to eq(:right)
   end
 
   it "update should execute a forced update of both logged change loaders" do
     session = Session.new
     loaders = LoggedChangeLoaders.new(session)
-    loaders[:left].should_receive(:update).with(:forced => true)
-    loaders[:right].should_receive(:update).with(:forced => true)
+    expect(loaders[:left]).to receive(:update).with(:forced => true)
+    expect(loaders[:right]).to receive(:update).with(:forced => true)
     loaders.update
   end
 
@@ -38,7 +38,7 @@ describe LoggedChangeLoader do
     session = Session.new
     session.left.execute "delete from rr_pending_changes"
     loader = LoggedChangeLoader.new session, :left
-    loader.oldest_change_time.should be_nil
+    expect(loader.oldest_change_time).to be_nil
   end
 
   it "oldest_change_time should return the time of the oldest change" do
@@ -58,7 +58,7 @@ describe LoggedChangeLoader do
         'change_time' => 100.seconds.from_now
       }
       loader = LoggedChangeLoader.new session, :left
-      loader.oldest_change_time.should.to_s == time.to_s
+      expect(loader.oldest_change_time).to.to_s == time.to_s
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end

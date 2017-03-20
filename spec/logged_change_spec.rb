@@ -13,8 +13,8 @@ describe LoggedChange do
     loader.update
 
     change = LoggedChange.new loader
-    change.session.should == session
-    change.database.should == :left
+    expect(change.session).to eq(session)
+    expect(change.database).to eq(:left)
   end
 
   it "load_specified should load the specified change" do
@@ -45,9 +45,9 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'left_table', {'id' => '2'}
 
-      change.table.should == 'left_table'
-      change.type.should == :insert
-      change.key.should == {'id' => '2'}
+      expect(change.table).to eq('left_table')
+      expect(change.type).to eq(:insert)
+      expect(change.key).to eq({'id' => '2'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -71,9 +71,9 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'scanner_records', {'id1' => 1, 'id2' => 2}
 
-      change.table.should == 'scanner_records'
-      change.type.should == :insert
-      change.key.should == {'id1' => '1', 'id2' => '2'}
+      expect(change.table).to eq('scanner_records')
+      expect(change.type).to eq(:insert)
+      expect(change.key).to eq({'id1' => '1', 'id2' => '2'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -94,9 +94,9 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'left_table', {'id' => 1}
 
-      session.left.
-        select_one("select * from rr_pending_changes where change_key = 'id|1'").
-        should be_nil
+      expect(session.left.
+        select_one("select * from rr_pending_changes where change_key = 'id|1'")).
+        to be_nil
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -130,7 +130,7 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'left_table', {'id' => '1'}
 
-      change.type.should == :insert
+      expect(change.type).to eq(:insert)
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -171,8 +171,8 @@ describe LoggedChange do
 
       change = LoggedChange.new loader
       change.load_specified 'left_table', {'id' => '1'}
-      change.type.should == :insert
-      change.key.should == {'id' => '1'}
+      expect(change.type).to eq(:insert)
+      expect(change.key).to eq({'id' => '1'})
 
       # second test case
       session.left.insert_record 'rr_pending_changes', {
@@ -191,9 +191,9 @@ describe LoggedChange do
 
       change = LoggedChange.new loader
       change.load_specified 'left_table', {'id' => '5'}
-      change.type.should == :update
-      change.key.should == {'id' => '5'}
-      change.new_key.should == {'id' => '5'}
+      expect(change.type).to eq(:update)
+      expect(change.key).to eq({'id' => '5'})
+      expect(change.new_key).to eq({'id' => '5'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -214,15 +214,15 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'scanner_records', {'id' => '1'}
 
-      change.table.should == 'scanner_records'
-      change.type.should == :insert
-      change.key.should == {'id' => '1'}
+      expect(change.table).to eq('scanner_records')
+      expect(change.type).to eq(:insert)
+      expect(change.key).to eq({'id' => '1'})
 
       change.load
 
-      change.table.should == 'scanner_records'
-      change.type.should == :insert
-      change.key.should == {'id' => '1'}
+      expect(change.table).to eq('scanner_records')
+      expect(change.type).to eq(:insert)
+      expect(change.key).to eq({'id' => '1'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -235,15 +235,15 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_specified 'scanner_records', {'id' => '1'}
 
-      change.table.should == 'scanner_records'
-      change.type.should == :no_change
-      change.key.should == {'id' => '1'}
+      expect(change.table).to eq('scanner_records')
+      expect(change.type).to eq(:no_change)
+      expect(change.key).to eq({'id' => '1'})
 
       change.load
 
-      change.table.should == 'scanner_records'
-      change.type.should == :no_change
-      change.key.should == {'id' => '1'}
+      expect(change.table).to eq('scanner_records')
+      expect(change.type).to eq(:no_change)
+      expect(change.key).to eq({'id' => '1'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -275,9 +275,9 @@ describe LoggedChange do
       loader.update :forced => true
       change.load
 
-      change.table.should == 'left_table'
-      change.type.should == :delete
-      change.key.should == {'id' => '1'}
+      expect(change.table).to eq('left_table')
+      expect(change.type).to eq(:delete)
+      expect(change.key).to eq({'id' => '1'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
       session.left.connection.execute('delete from left_table')
@@ -287,26 +287,26 @@ describe LoggedChange do
   it "key_from_raw_key should return the correct column_name => value hash for the given key" do
     loader = LoggedChangeLoader.new Session.new, :left
     change = LoggedChange.new loader
-    change.key_to_hash("a|1|b|2").should == {
+    expect(change.key_to_hash("a|1|b|2")).to eq({
       'a' => '1',
       'b' => '2'
-    }
+    })
   end
 
   it "key_from_raw_key should work with multi character key_sep strings" do
     loader = LoggedChangeLoader.new Session.new, :left
     change = LoggedChange.new loader
-    change.stub!(:key_sep).and_return('BLA')
-    change.key_to_hash("aBLA1BLAbBLA2").should == {
+    allow(change).to receive(:key_sep).and_return('BLA')
+    expect(change.key_to_hash("aBLA1BLAbBLA2")).to eq({
       'a' => '1',
       'b' => '2'
-    }
+    })
   end
 
   it "load_oldest should not load a change if none available" do
     loader = LoggedChangeLoader.new Session.new, :left
     change = LoggedChange.new loader
-    change.should_not_receive :load_specified
+    expect(change).not_to receive :load_specified
     change.load_oldest
   end
 
@@ -331,7 +331,7 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_oldest
 
-      change.key.should == {'id' => '1'}
+      expect(change.key).to eq({'id' => '1'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -364,8 +364,8 @@ describe LoggedChange do
       change = LoggedChange.new loader
       change.load_oldest
 
-      change.type.should == :insert
-      change.key.should == {'id' => '2'}
+      expect(change.type).to eq(:insert)
+      expect(change.key).to eq({'id' => '2'})
     ensure
       session.left.connection.execute('delete from rr_pending_changes')
     end
@@ -378,7 +378,7 @@ describe LoggedChange do
 
     change = LoggedChange.new loader
     yaml = change.to_yaml
-    yaml.should_not =~ /session/
-    yaml.should_not =~ /loader/
+    expect(yaml).not_to match(/session/)
+    expect(yaml).not_to match(/loader/)
   end
 end

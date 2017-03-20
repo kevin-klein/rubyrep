@@ -70,12 +70,12 @@ describe ReplicationRun do
 
       # No event filter at all
       run = ReplicationRun.new session, TaskSweeper.new(1)
-      run.event_filtered?(diff).should be_falsey
+      expect(run.event_filtered?(diff)).to be_falsey
 
       # Event filter that does not handle replication events
       session.configuration.options[:event_filter] = Object.new
       run = ReplicationRun.new session, TaskSweeper.new(1)
-      run.event_filtered?(diff).should be_falsey
+      expect(run.event_filtered?(diff)).to be_falsey
 
       # event_filtered? should signal filtering (i. e. return true) if filter returns false.
       filter = Object.new
@@ -84,7 +84,7 @@ describe ReplicationRun do
       end
       session.configuration.options[:event_filter] = filter
       run = ReplicationRun.new session, TaskSweeper.new(1)
-      run.event_filtered?(diff).should be_truthy
+      expect(run.event_filtered?(diff)).to be_truthy
 
       # event_filtered? should return false if filter returns true.
       filter = {}
@@ -94,7 +94,7 @@ describe ReplicationRun do
       end
       session.configuration.options[:event_filter] = filter
       run = ReplicationRun.new session, TaskSweeper.new(1)
-      run.event_filtered?(diff).should be_falsey
+      expect(run.event_filtered?(diff)).to be_falsey
 
       expect(filter[:args][0]).to eq('extender_no_record')
     ensure
@@ -142,10 +142,10 @@ describe ReplicationRun do
       run = ReplicationRun.new session, TaskSweeper.new(1)
       run.run
 
-      session.right.select_records(:table => "extender_no_record").should == [{
+      expect(session.right.select_records(:table => "extender_no_record")).to eq([{
         'id' => '2',
         'name' => 'blub'
-      }]
+      }])
     ensure
       if session
         session.left.execute "delete from extender_no_record"
@@ -231,7 +231,7 @@ describe ReplicationRun do
       allow(run.replicator).to receive(:replicate_difference) { raise Exception, 'dummy message' }
       allow(run.helper).to receive(:log_replication_outcome) { raise Exception, 'blub' }
 
-      lambda {run.run}.should raise_error(Exception, 'dummy message')
+      expect {run.run}.to raise_error(Exception, 'dummy message')
     ensure
       session.left.execute "delete from rr_pending_changes"
       session.left.execute "delete from rr_logged_events"
@@ -253,7 +253,7 @@ describe ReplicationRun do
       sweeper = TaskSweeper.new(1)
       allow(sweeper).to receive(:terminated?).and_return(true)
       run = ReplicationRun.new session, sweeper
-      LoggedChangeLoaders.should_not_receive(:new)
+      expect(LoggedChangeLoaders).not_to receive(:new)
       run.run
     ensure
       session.left.execute "delete from rr_pending_changes"
@@ -274,7 +274,7 @@ describe ReplicationRun do
     }
 
     run = ReplicationRun.new session, TaskSweeper.new(1)
-    lambda {run.run}.should raise_error(ArgumentError)
+    expect {run.run}.to raise_error(ArgumentError)
   end
 
   it "run should process trigger created change log records" do
@@ -296,16 +296,16 @@ describe ReplicationRun do
       run = ReplicationRun.new session, TaskSweeper.new(1)
       run.run
 
-      session.right.select_record(:table => "extender_no_record").should == {
+      expect(session.right.select_record(:table => "extender_no_record")).to eq({
         'id' => '1',
         'name' => 'bla'
-      }
+      })
 
       # also verify that event was logged
       row = session.left.select_one("select * from rr_logged_events")
-      row['diff_type'].should == 'left'
-      row['change_key'].should == '1'
-      row['description'].should == 'replicated'
+      expect(row['diff_type']).to eq('left')
+      expect(row['change_key']).to eq('1')
+      expect(row['description']).to eq('replicated')
     ensure
       initializer.drop_trigger :left, 'extender_no_record' if initializer
     end

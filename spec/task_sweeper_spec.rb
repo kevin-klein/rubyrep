@@ -9,30 +9,30 @@ describe TaskSweeper do
   it "should execute the given task" do
     x = nil
     TaskSweeper.timeout(1) {|sweeper| x = 1}
-    x.should == 1
+    expect(x).to eq(1)
   end
 
   it "should raise exceptions thrown by the task" do
-    lambda {
+    expect {
       TaskSweeper.timeout(1) {raise "bla"}
-    }.should raise_error("bla")
+    }.to raise_error("bla")
   end
 
   it "should return if task stalls" do
     start = Time.now
-    TaskSweeper.timeout(0.01) {sleep 10}.should be_terminated
-    (Time.now - start < 5).should be_true
+    expect(TaskSweeper.timeout(0.01) {sleep 10}).to be_terminated
+    expect(Time.now - start < 5).to be_truthy
   end
 
   it "should not return if task is active" do
     start = Time.now
-    TaskSweeper.timeout(0.1) do |sweeper|
+    expect(TaskSweeper.timeout(0.1) do |sweeper|
       10.times do
         sleep 0.05
         sweeper.ping
       end
-    end.should_not be_terminated
-    (Time.now - start > 0.4).should be_true
+    end).not_to be_terminated
+    expect(Time.now - start > 0.4).to be_truthy
 
   end
 
@@ -42,6 +42,6 @@ describe TaskSweeper do
       sleep 0.05
       terminated = sweeper.terminated?
     end.join
-    terminated.should be_true
+    expect(terminated).to be_truthy
   end
 end
