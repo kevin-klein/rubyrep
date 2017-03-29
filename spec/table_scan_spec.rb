@@ -7,12 +7,6 @@ describe TableScan do
     Initializer.configuration = standard_config
   end
 
-  it "initialize should raise exception if table doesn't have primary keys" do
-    session = Session.new
-    expect {TableScan.new session, 'extender_without_key'} \
-      .to raise_error(RuntimeError, /.*extender_without_key.*primary key/)
-  end
-
   it "initialize should cache the primary keys of the given table" do
     session = Session.new
     scann = TableScan.new session, 'scanner_records'

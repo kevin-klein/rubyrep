@@ -84,10 +84,6 @@ describe SyncRunner do
 
       sync_runner.execute
 
-      expect($stdout.string).to match(
-        /scanner_records .* 5\n/
-      )
-
       left_records = session.left.connection.select_all("select * from scanner_records order by id").to_hash
       right_records = session.right.connection.select_all("select * from scanner_records order by id").to_hash
       expect(left_records).to eq(right_records)

@@ -105,63 +105,6 @@ describe ReplicationRun do
     end
   end
 
-  it "run should not replicate filtered changes" do
-    begin
-      config = deep_copy(standard_config)
-      config.options[:committer] = :never_commit
-
-      filter = Object.new
-      def filter.before_replicate(table, key, helper, diff)
-        diff.changes[:left].key['id'] != '1'
-      end
-      config.options[:event_filter] = filter
-
-      session = Session.new(config)
-
-      session.left.insert_record 'extender_no_record', {
-        'id' => '1',
-        'name' => 'bla'
-      }
-      session.left.insert_record 'extender_no_record', {
-        'id' => '2',
-        'name' => 'blub'
-      }
-      session.left.insert_record 'rr_pending_changes', {
-        'change_table' => 'extender_no_record',
-        'change_key' => 'id|1',
-        'change_type' => 'I',
-        'change_time' => Time.now
-      }
-      session.left.insert_record 'rr_pending_changes', {
-        'change_table' => 'extender_no_record',
-        'change_key' => 'id|2',
-        'change_type' => 'I',
-        'change_time' => Time.now
-      }
-
-      run = ReplicationRun.new session, TaskSweeper.new(1)
-      run.run
-
-      expect(session.right.select_records(:table => "extender_no_record")).to eq([{
-        'id' => '2',
-        'name' => 'blub'
-      }])
-    ensure
-      if session
-        session.left.execute "delete from extender_no_record"
-        session.right.execute "delete from extender_no_record"
-        session.left.execute "delete from rr_pending_changes"
-      end
-    end
-  end
-
-  it "run should not create the replicator if there are no pending changes" do
-    session = Session.new
-    run = ReplicationRun.new session, TaskSweeper.new(1)
-    expect(run).not_to receive(:replicator)
-    run.run
-  end
-
   it "run should only replicate real differences" do
     session = Session.new
     begin
@@ -286,6 +229,7 @@ describe ReplicationRun do
       session = Session.new(config)
       session.left.execute "delete from rr_logged_events"
       initializer = ReplicationInitializer.new(session)
+      initializer.drop_trigger :left, 'extender_no_record'
       initializer.create_trigger :left, 'extender_no_record'
 
       session.left.insert_record 'extender_no_record', {

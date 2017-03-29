@@ -42,13 +42,14 @@ describe ReplicationInitializer do
       if session.left.replication_trigger_exists?('rr_trigger_test', 'trigger_test')
         session.left.drop_replication_trigger('rr_trigger_test', 'trigger_test')
       end
+      session.left.execute('delete from rr_pending_changes')
 
       initializer.create_trigger(:left, 'trigger_test')
 
-      session.left.insert_record 'trigger_test', 'first_id' => 1,
+      session.left.insert_record('trigger_test', 'first_id' => 1,
                                                  'second_id' => 2,
                                                  'name' => 'bla',
-                                                 'id' => 2
+                                                 'id' => 2)
 
       row = session.left.select_one('select * from rr_pending_changes')
       row.delete 'id'

@@ -93,48 +93,4 @@ describe TableSync do
     # verify correct parameter assignment
     expect(filter[:args]).to eq(['scanner_records', {'id' => 1}, sync.helper, :left, {'id' => 1, 'name' => 'bla'}])
   end
-
-  it "run should synchronize the databases" do
-    config = deep_copy(standard_config)
-    config.options[:committer] = :never_commit
-    config.options[:logged_sync_events] = [:all_conflicts]
-    before_hook_called = false
-    after_hook_called = false
-    config.options[:before_table_sync] = lambda {|helper| before_hook_called = true}
-    config.options[:after_table_sync] = lambda { |helper| after_hook_called = true}
-
-    filter = Object.new
-    def filter.before_sync(table, key, helper, type, row)
-      key['id'] != 6
-    end
-    config.options[:event_filter] = filter
-    session = Session.new(config)
-    begin
-      sync = TableSync.new(session, 'scanner_records')
-      sync.run
-
-      # Verify that sync events are logged
-      row = session.left.select_one("select * from rr_logged_events where change_key = '2' order by id")
-      expect(row['change_table']).to eq('scanner_records')
-      expect(row['diff_type']).to eq('conflict')
-      expect(row['description']).to eq('left_wins')
-
-      # verify that the table was synchronized
-      left_records = session.left.select_all("select * from scanner_records where id <> 6 order by id")
-      right_records = session.right.select_all("select * from scanner_records where id <> 6 order by id")
-      expect(left_records).to eq(right_records)
-
-      # verify that the filtered out record was not synced
-      expect(session.left.select_one("select * from scanner_records where id = 6")).
-        to be_nil
-
-      # verify that hooks where called
-      expect(before_hook_called).to be_truthy
-      expect(after_hook_called).to be_truthy
-    ensure
-      Committers::NeverCommitter.rollback_current_session
-      session.left.execute "delete from rr_logged_events"
-    end
-  end
-
 end

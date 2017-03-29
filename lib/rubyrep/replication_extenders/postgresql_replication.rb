@@ -145,8 +145,8 @@ module RR
       # * +trigger_name+: name of the trigger
       # * +table_name+: name of the table for which the trigger exists
       def drop_replication_trigger(trigger_name, table_name)
-        execute "DROP TRIGGER \"#{trigger_name}\" ON \"#{table_name}\";"
-        execute "DROP FUNCTION \"#{trigger_name}\"();"
+        execute "DROP TRIGGER if exists \"#{trigger_name}\" ON \"#{table_name}\";"
+        execute "DROP FUNCTION if exists \"#{trigger_name}\"();"
       end
 
       # Returns +true+ if the named trigger exists for the named table.

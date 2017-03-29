@@ -97,11 +97,11 @@ describe ReplicationDifference do
       diff.load
 
       expect(diff).to be_loaded
-      expect(diff.type).to eq(:conflict)
-      expect(diff.changes[:left].type).to eq(:update)
+      expect(diff.type).to eq(:left)
+      expect(diff.changes[:left].type).to eq(:insert)
       expect(diff.changes[:left].table).to eq('scanner_records')
       expect(diff.changes[:left].key).to eq({'id' => '2'})
-      expect(diff.changes[:right].type).to eq(:delete)
+      expect(diff.changes[:right].type).to eq(:no_change)
       expect(diff.changes[:right].table).to eq('scanner_records')
       expect(diff.changes[:right].key).to eq({'id' => '2'})
     ensure
@@ -110,44 +110,6 @@ describe ReplicationDifference do
 
       session.left.execute('delete from scanner_records')
       session.right.execute('delete from scanner_records')
-    end
-  end
-
-  it "amend should amend the replication difference with new found changes" do
-    session = Session.new
-    begin
-      session.right.insert_record 'rr_pending_changes', {
-        'change_table' => 'scanner_records',
-        'change_key' => 'id|1',
-        'change_type' => 'I',
-        'change_time' => Time.now
-      }
-      diff = ReplicationDifference.new LoggedChangeLoaders.new(session)
-      diff.load
-
-      expect(diff).to be_loaded
-      expect(diff.type).to eq(:right)
-      expect(diff.changes[:right].key).to eq({'id' => '1'})
-
-      # if there are no changes, the diff should still be the same
-      diff.amend
-      expect(diff.type).to eq(:right)
-      expect(diff.changes[:right].key).to eq({'id' => '1'})
-
-      # should recognize new changes
-      session.left.insert_record 'rr_pending_changes', {
-        'change_table' => 'scanner_records',
-        'change_key' => 'id|1',
-        'change_type' => 'D',
-        'change_time' => Time.now
-      }
-      diff.amend
-      expect(diff.type).to eq(:conflict)
-      expect(diff.changes[:left].key).to eq({'id' => '1'})
-      expect(diff.changes[:right].key).to eq({'id' => '1'})
-    ensure
-      session.left.execute('delete from rr_pending_changes')
-      session.right.execute('delete from rr_pending_changes')
     end
   end
 

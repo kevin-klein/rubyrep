@@ -110,7 +110,8 @@ shared_examples_for "ReplicationExtender" do
         log_table: 'rr_pending_changes',
         key_sep: '|',
       }
-      session.left.create_replication_trigger params
+      session.left.drop_replication_trigger(params[:trigger_name], params[:table])
+      session.left.create_replication_trigger(params)
       session.left.insert_record 'extender_no_record', {
         'id' => 9,
         'name' => 'bla'

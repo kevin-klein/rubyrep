@@ -61,7 +61,7 @@ module RR
     # Return the committer, creating it if not yet there.
     def committer
       unless @committer
-        committer_class = Committers.committers[sync_options[:committer]]
+        committer_class = Committers.committers[sync_options[:committer] || :default]
         @committer = committer_class.new(session)
       end
       @committer
